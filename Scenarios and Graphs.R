@@ -1,6 +1,8 @@
 #Load Functions
 source("./lib/simplePLS.R")
 
+set.seed(123)
+
 
 #-----------------------------Scenario 1: Original Data--------------------
 
@@ -286,7 +288,7 @@ random$plsNeuralNet = plsNeuralNet
 par(mfrow=c(2,2))
 
 #Original Data - PLS (Formative) Training
-graphResiduals ("AA.0",original$plsFormative$residualsTraining,"PLS(Formative) Original 100 Training Data",c(-6,6))
+graphResiduals ("AA.0",original$plsFormative$ residualsTraining,"PLS(Formative) Original 100 Training Data",c(-6,6))
 
 #Original Data - PLS (Formative) Holdout
 graphResiduals ("AA.0",original$plsFormative$residualsTest,"PLS(Formative) Original 83 Holdout Data",c(-6,6))
