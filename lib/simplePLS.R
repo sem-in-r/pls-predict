@@ -211,8 +211,17 @@ PLSpredict <- function(plsModel, newData){
     pMeasurements <- c(pMeasurements,mmMatrix[mmMatrix[,"latent"]==exVariables[i],"measurement"])
   }
   
-  #Extract and Normalize  Measurements needed for Prediction
-  normData <- scale(newData[,pMeasurements],TRUE,TRUE)
+  #Extract Measurements needed for Predictions
+  normData <- newData[,pMeasurements]
+  
+  #Normalize data
+  for (i in pMeasurements)
+  {
+    normData[,i] <-(newData[,i] - meanData[i])/sdData[i]
+  }  
+  
+  #Convert dataset to matrix
+  normData<-data.matrix(normData)
   
   #Create container for estimated measurements
   eMeasurements = NULL
