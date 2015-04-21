@@ -4,8 +4,9 @@
 #Clear Environment
 rm(list=ls())
 
-#Load our Algorithm
+#Load our Libraries
 source("./lib/simplePLS.R")
+source("./lib/graphUtils.R")
 
 #Load Library for PCA
 library(psych)
