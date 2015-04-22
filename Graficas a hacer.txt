@@ -1,0 +1,5 @@
+
+- Simple Actual vs Predicted PLS
+- Simple Histogram Actual vs Predicted 
+- PLS vs Linear Regression
+- PLS vs Neural Network

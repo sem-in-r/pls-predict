@@ -1,0 +1,513 @@
+---
+title: "Meeting 7"
+author: "PLS-PM Prediction Revised"
+date: "04/22/2015"
+output: beamer_presentation
+---
+
+```{r, echo=FALSE}
+
+#----------------------------------Initializing Environment--------------------------------
+
+#Load our Libraries
+source("./lib/simplePLS.R")
+source("./lib/graphUtils.R")
+
+#Load Library for PCA
+library(psych)
+
+#Load Data
+trainData=read.csv("./data/trainingData_Random.csv")
+testData=read.csv("./data/testData_Random.csv")
+
+#Load Data Suneel
+Anime=read.csv("./data/originalData.csv",header=T)
+set.seed(123)
+index=sample.int(dim(Anime)[1],83,replace=F)
+trainData=Anime[-index,]
+testData=Anime[index,]
+npred=read.csv("./data/npred.csv")
+
+#Prepare objects
+original <- list (lm = list(),
+                  pls = list(),
+                  nn = list())
+
+pca <- list (lm = list(),
+             pls = list())
+
+#Calculate neural net residuals
+nn_residuals <- testData[,c("AA.0","AA.1","AA.2","AA.3")] - npred[,c("AA.0","AA.1","AA.2","AA.3")]
+
+#Load Neural net Prediction
+nn <- list(predTest = list(predictedMeasurements = npred),
+           residualsTest= nn_residuals)
+original$nn<- nn
+
+#----------------------Do PCA Analysis to produce new scenarios---------------------------------
+
+#Filter the dataset for the AA values
+Data<-trainData[,c("AA.0","AA.1","AA.2","AA.3")]
+
+#Do Principal Components Analysis
+pcaData <- principal(Data,4,rotate ="none")
+
+#Add the Principal Components to the Original Data
+trainData<-cbind(trainData,pcaData$scores)
+
+#Filter the dataset for the AA values
+Data<-testData[,c("AA.0","AA.1","AA.2","AA.3")]
+
+#Do Principal Components Analysis
+pcaData <- principal(Data,4,rotate ="none")
+
+#Add the Principal Components to the Original Data
+testData<-cbind(testData,pcaData$scores)
+
+
+#-------------------------------Begin the PLS-PM Analysis---------------------------------
+
+#PCA Analysis
+
+#Create the Matrix of the Structural Model
+smMatrix <- matrix(c("Perceived Visual Complexity", "Aproach/Avoidance",
+                     "Arousal","Aproach/Avoidance"),nrow=2,ncol=2,byrow =TRUE,
+                   dimnames = list(1:2,c("source","target")))
+
+#Create the Matrix of the Measurement Model
+mmMatrix <- matrix(c("Perceived Visual Complexity","VX.0","F",
+                     "Perceived Visual Complexity","VX.1","F",
+                     "Perceived Visual Complexity","VX.2","F",
+                     "Perceived Visual Complexity","VX.3","F",
+                     "Perceived Visual Complexity","VX.4","F",
+                     "Arousal","Aro1","F",
+                     "Arousal","Aro2","F",
+                     "Arousal","Aro3","F",
+                     "Arousal","Aro4","F",
+                     "Aproach/Avoidance","PC1","R",
+                     "Aproach/Avoidance","PC2","R",
+                     "Aproach/Avoidance","PC3","R",
+                     "Aproach/Avoidance","PC4","R"),nrow=13,ncol=3,byrow =TRUE,
+                   dimnames = list(1:13,c("latent","measurement","type")))
+
+
+#Call PLS-PM Function
+plsModel<-simplePLS(trainData,smMatrix,mmMatrix)
+
+#Call Prediction Function
+predTrain <- PLSpredict(plsModel,trainData)
+predTest <- PLSpredict(plsModel,testData)
+
+#Get Residuals
+residualsTraining <- predTrain$residuals
+residualsTest <- predTest$residuals
+
+#Prepare Object
+pls <- list(predTrain = predTrain,
+            predTest = predTest,
+            residualsTraining = residualsTraining,
+            residualsTest= residualsTest)
+
+#Assign to List
+pca$pls = pls
+
+#Original Data
+
+#Create the Matrix of the Structural Model
+smMatrix <- matrix(c("Perceived Visual Complexity", "Aproach/Avoidance",
+                     "Arousal","Aproach/Avoidance"),nrow=2,ncol=2,byrow =TRUE,
+                   dimnames = list(1:2,c("source","target")))
+
+#Create the Matrix of the Measurement Model
+mmMatrix <- matrix(c("Perceived Visual Complexity","VX.0","F",
+                     "Perceived Visual Complexity","VX.1","F",
+                     "Perceived Visual Complexity","VX.2","F",
+                     "Perceived Visual Complexity","VX.3","F",
+                     "Perceived Visual Complexity","VX.4","F",
+                     "Arousal","Aro1","F",
+                     "Arousal","Aro2","F",
+                     "Arousal","Aro3","F",
+                     "Arousal","Aro4","F",
+                     "Aproach/Avoidance","AA.0","R",
+                     "Aproach/Avoidance","AA.1","R",
+                     "Aproach/Avoidance","AA.2","R",
+                     "Aproach/Avoidance","AA.3","R"),nrow=13,ncol=3,byrow =TRUE,
+                   dimnames = list(1:13,c("latent","measurement","type")))
+
+#Call PLS-PM Function
+plsModel<-simplePLS(trainData,smMatrix,mmMatrix)
+
+#Call Prediction Function
+predTrain <- PLSpredict(plsModel,trainData)
+predTest <- PLSpredict(plsModel,testData)
+
+#Get Residuals
+residualsTraining <- predTrain$residuals
+residualsTest <- predTest$residuals
+
+#Prepare Object
+pls <- list(predTrain = predTrain,
+            predTest = predTest,
+            residualsTraining = residualsTraining,
+            residualsTest= residualsTest)
+
+#Assign to List
+original$pls<-pls
+
+#--------------------------------------Begin LM Analysis---------------------------------
+
+#PCA
+
+#Multiple LInear Regeresion for each output variable
+lmAA0 <- with(trainData, lm(PC1 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA1 <- with(trainData, lm(PC2 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA2 <- with(trainData, lm(PC3 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA3 <- with(trainData, lm(PC4 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+
+#Use our custom function to predict each value for training data
+predTrainAA0 <- predictlm (lmAA0,trainData)
+predTrainAA1 <- predictlm (lmAA1,trainData)
+predTrainAA2 <- predictlm (lmAA2,trainData)
+predTrainAA3 <- predictlm (lmAA3,trainData)
+
+#Join the Predictions in vector
+predTrain <- cbind(predTrainAA0,predTrainAA1,predTrainAA2,predTrainAA3)
+names(predTrain)<-c("PC1","PC2","PC3","PC4")
+
+#Join the Residuals in vector
+residualsTraining <- trainData[,c("PC1","PC2","PC3","PC4")]-cbind(predTrainAA0,predTrainAA1,predTrainAA2,predTrainAA3)
+
+#Use our custom function to predict each value for Test data
+predTestAA0 <- predictlm (lmAA0,testData)
+predTestAA1 <- predictlm (lmAA1,testData)
+predTestAA2 <- predictlm (lmAA2,testData)
+predTestAA3 <- predictlm (lmAA3,testData)
+
+#Join the Predictions in vector
+predTest <- cbind(predTestAA0,predTestAA1,predTestAA2,predTestAA3)
+names(predTest)<-c("PC1","PC2","PC3","PC4")
+
+#Calculate the resuduals for the training Data
+residualsTest <- testData[,c("PC1","PC2","PC3","PC4")]-cbind(predTestAA0,predTestAA1,predTestAA2,predTestAA3)
+
+#Prepare Object
+lm <- list(predTrain = list(predictedMeasurements = predTrain),
+           predTest = list(predictedMeasurements = predTest),
+           residualsTraining = residualsTraining,
+           residualsTest= residualsTest)
+
+#Assign to List
+pca$lm<-lm
+
+#Original
+
+#Multiple LInear Regeresion for each output variable
+lmAA0 <- with(trainData, lm(AA.0 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA1 <- with(trainData, lm(AA.1 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA2 <- with(trainData, lm(AA.2 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+lmAA3 <- with(trainData, lm(AA.3 ~ VX.0+VX.1+VX.2+VX.3+VX.4+Aro1+Aro2+Aro3+Aro4))
+
+#Use our custom function to predict each value for training data
+predTrainAA0 <- predictlm (lmAA0,trainData)
+predTrainAA1 <- predictlm (lmAA1,trainData)
+predTrainAA2 <- predictlm (lmAA2,trainData)
+predTrainAA3 <- predictlm (lmAA3,trainData)
+
+#Join the Predictions in vector
+predTrain <- cbind(predTrainAA0,predTrainAA1,predTrainAA2,predTrainAA3)
+names(predTrain)<-c("AA.0","AA.1","AA.2","AA.3")
+
+#Join the Residuals in vector
+residualsTraining <- trainData[,c("AA.0","AA.1","AA.2","AA.3")]-cbind(predTrainAA0,predTrainAA1,predTrainAA2,predTrainAA3)
+
+#Use our custom function to predict each value for Test data
+predTestAA0 <- predictlm (lmAA0,testData)
+predTestAA1 <- predictlm (lmAA1,testData)
+predTestAA2 <- predictlm (lmAA2,testData)
+predTestAA3 <- predictlm (lmAA3,testData)
+
+#Join the Predictions in vector
+predTest <- cbind(predTestAA0,predTestAA1,predTestAA2,predTestAA3)
+names(predTest)<-c("AA.0","AA.1","AA.2","AA.3")
+
+#Calculate the resuduals for the training Data
+residualsTest <- testData[,c("AA.0","AA.1","AA.2","AA.3")]-cbind(predTestAA0,predTestAA1,predTestAA2,predTestAA3)
+
+#Prepare Object
+lm <- list(predTrain = list(predictedMeasurements = predTrain),
+           predTest = list(predictedMeasurements = predTest),
+           residualsTraining = residualsTraining,
+           residualsTest= residualsTest)
+
+#Assign to List
+original$lm<-lm
+```
+
+## Adjusting the prediction function
+
+Originally the prediction function *normalized* the test data based on its own mean and standard deviation, however Prof. Galit proposed to use the training data's mean and standard deviation for this normalization, the same way as we use those statistics to *de-normalize* the predictions.
+
+Because of these changes some of the main graphs we've seen before had to be done again, and this time we'll see them using the latest changes to the **graphUtils** Library.
+
+## Outline
+
+This is the information we'll be seeing today: 
+
+- PLS model: Actual vs Predicted Scatterplot
+- PLS model: Prediction Residuals Histogram
+- PLS vs Linear Regression: Joint Histogram
+- PLS vs Neural Network: Joint Histogram
+- Table of Statistics Comparing the three methods.
+- Review Linear Model vs PLS with PCA as Output.
+
+
+## PLS model: Actual vs Predicted Scatterplot
+
+```{r, echo=FALSE}
+
+#Set the panels
+par(mfrow=c(2,2))
+
+#PLS: Actual vs Predicted (AA.0)
+y<-original$pls$predTest$predictedMeasurements[,"AA.0"]
+x<-testData[,"AA.0"]
+z<-testData[,"PC1"]
+title="PLS: Actual vs Predicted (AA.0)"
+xlabel=paste("Actuals \n Means: Act=",
+             signif(mean(x),digits=4),
+             "PLS=",
+             signif(mean(y),digits=4))
+ylabel="Predicted"
+graphScatterplot(x,y,z,title,xlabel,ylabel)
+
+#PLS: Actual vs Predicted (AA.1)
+y<-original$pls$predTest$predictedMeasurements[,"AA.1"]
+x<-testData[,"AA.1"]
+z<-testData[,"PC1"]
+title="PLS: Actual vs Predicted (AA.1)"
+xlabel=paste("Actuals \n Means: Act=",
+             signif(mean(x),digits=4),
+             "PLS=",
+             signif(mean(y),digits=4))
+ylabel="Predicted"
+graphScatterplot(x,y,z,title,xlabel,ylabel)
+
+#PLS: Actual vs Predicted (AA.2)
+y<-original$pls$predTest$predictedMeasurements[,"AA.2"]
+x<-testData[,"AA.2"]
+z<-testData[,"PC1"]
+title="PLS: Actual vs Predicted (AA.2)"
+xlabel=paste("Actuals \n Means: Act=",
+             signif(mean(x),digits=4),
+             "PLS=",
+             signif(mean(y),digits=4))
+ylabel="Predicted"
+graphScatterplot(x,y,z,title,xlabel,ylabel)
+
+#PLS: Actual vs Predicted (AA.3)
+y<-original$pls$predTest$predictedMeasurements[,"AA.3"]
+x<-testData[,"AA.3"]
+z<-testData[,"PC1"]
+title="PLS: Actual vs Predicted (AA.3)"
+xlabel=paste("Actuals \n Means: Act=",
+             signif(mean(x),digits=4),
+             "PLS=",
+             signif(mean(y),digits=4))
+ylabel="Predicted"
+graphScatterplot(x,y,z,title,xlabel,ylabel)
+
+```
+
+## PLS model: Prediction Residuals Histogram
+
+```{r, echo=FALSE}
+#Set the panels
+par(mfrow=c(2,2))
+
+title<-"PLS Predction Reduals"
+
+newgraphResiduals("AA.0",original$pls$residualsTest,title,c(-6,6),c(0,0.4))
+
+newgraphResiduals("AA.1",original$pls$residualsTest,title,c(-6,6),c(0,0.4))
+
+newgraphResiduals("AA.2",original$pls$residualsTest,title,c(-6,6),c(0,0.4))
+
+newgraphResiduals("AA.3",original$pls$residualsTest,title,c(-6,6),c(0,0.4))
+
+```
+
+## PLS vs Linear Regression: Joint Histogram
+
+```{r, echo=FALSE}
+#Set the panels
+par(mfrow=c(2,2))
+
+title<-"PLS vs LM Residuals"
+graphCombinedResiduals("AA.0",original$lm$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"LM","PLS")
+
+graphCombinedResiduals("AA.1",original$lm$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"LM","PLS")
+
+graphCombinedResiduals("AA.2",original$lm$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"LM","PLS")
+
+graphCombinedResiduals("AA.3",original$lm$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"LM","PLS")
+
+```
+
+## PLS vs Neural Network: Joint Histogram
+
+```{r, echo=FALSE}
+#Set the panels
+par(mfrow=c(2,2))
+
+title<-"PLS vs NN Residuals"
+graphCombinedResiduals("AA.0",original$nn$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"NN","PLS")
+
+graphCombinedResiduals("AA.1",original$nn$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"NN","PLS")
+
+graphCombinedResiduals("AA.2",original$nn$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"NN","PLS")
+
+graphCombinedResiduals("AA.3",original$nn$residualsTest,original$pls$residualsTest,title,c(-6,6),c(0,0.4),10,"NN","PLS")
+```
+
+## Residuals Mean Summary LM, PLS and NN.
+
+```{r, echo=FALSE}
+lmMeanAA0<-signif(mean(original$lm$residualsTest[,"AA.0"]),digits=4)
+plsMeanAA0<-signif(mean(original$pls$residualsTest[,"AA.0"]),digits=4)
+nnMeanAA0<-signif(mean(original$nn$residualsTest[,"AA.0"]),digits=4)
+
+lmMeanAA1<-signif(mean(original$lm$residualsTest[,"AA.1"]),digits=4)
+plsMeanAA1<-signif(mean(original$pls$residualsTest[,"AA.1"]),digits=4)
+nnMeanAA1<-signif(mean(original$nn$residualsTest[,"AA.1"]),digits=4)
+
+lmMeanAA2<-signif(mean(original$lm$residualsTest[,"AA.2"]),digits=4)
+plsMeanAA2<-signif(mean(original$pls$residualsTest[,"AA.2"]),digits=4)
+nnMeanAA2<-signif(mean(original$nn$residualsTest[,"AA.2"]),digits=4)
+
+lmMeanAA3<-signif(mean(original$lm$residualsTest[,"AA.3"]),digits=4)
+plsMeanAA3<-signif(mean(original$pls$residualsTest[,"AA.3"]),digits=4)
+nnMeanAA3<-signif(mean(original$nn$residualsTest[,"AA.3"]),digits=4)
+
+```
+
+Item          | Linear Model  | PLS-PM        | Neural Net
+------------- | ------------- | ------------- | -------------
+AA.0          | `r lmMeanAA0` | `r plsMeanAA0`| `r nnMeanAA0`
+AA.1          | `r lmMeanAA1` | `r plsMeanAA1`| `r nnMeanAA1`
+AA.2          | `r lmMeanAA2` | `r plsMeanAA2`| `r nnMeanAA2`
+AA.3          | `r lmMeanAA3` | `r plsMeanAA3`| `r nnMeanAA3`
+
+
+## Residuals Standard Deviation Summary LM, PLS and NN.
+
+```{r, echo=FALSE}
+
+lmSdAA0<-signif(sd(original$lm$residualsTest[,"AA.0"]),digits=4)
+plsSdAA0<-signif(sd(original$pls$residualsTest[,"AA.0"]),digits=4)
+nnSdAA0<-signif(sd(original$nn$residualsTest[,"AA.0"]),digits=4)
+
+lmSdAA1<-signif(sd(original$lm$residualsTest[,"AA.1"]),digits=4)
+plsSdAA1<-signif(sd(original$pls$residualsTest[,"AA.1"]),digits=4)
+nnSdAA1<-signif(sd(original$nn$residualsTest[,"AA.1"]),digits=4)
+
+lmSdAA2<-signif(sd(original$lm$residualsTest[,"AA.2"]),digits=4)
+plsSdAA2<-signif(sd(original$pls$residualsTest[,"AA.2"]),digits=4)
+nnSdAA2<-signif(sd(original$nn$residualsTest[,"AA.2"]),digits=4)
+
+lmSdAA3<-signif(sd(original$lm$residualsTest[,"AA.3"]),digits=4)
+plsSdAA3<-signif(sd(original$pls$residualsTest[,"AA.3"]),digits=4)
+nnSdAA3<-signif(sd(original$nn$residualsTest[,"AA.3"]),digits=4)
+```
+
+Item          | Linear Model  | PLS-PM        | Neural Net
+------------- | ------------- | ------------- | -------------
+AA.0          | `r lmSdAA0`   | `r plsSdAA0`  | `r nnSdAA0`
+AA.1          | `r lmSdAA1`   | `r plsSdAA1`  | `r nnSdAA1`
+AA.2          | `r lmSdAA2`   | `r plsSdAA2`  | `r nnSdAA2`
+AA.3          | `r lmSdAA3`   | `r plsSdAA3`  | `r nnSdAA3`
+
+## Actual Mean vs Predicted for LM, PLS and NN.
+
+```{r, echo=FALSE}
+actMeanAA0<-signif(mean(testData[,"AA.0"]),digits=4)
+lmMeanAA0<-signif(mean(original$lm$predTest$predictedMeasurements[,"AA.0"]),digits=4)
+plsMeanAA0<-signif(mean(original$pls$predTest$predictedMeasurements[,"AA.0"]),digits=4)
+nnMeanAA0<-signif(mean(original$nn$predTest$predictedMeasurements[,"AA.0"]),digits=4)
+
+actMeanAA1<-signif(mean(testData[,"AA.1"]),digits=4)
+lmMeanAA1<-signif(mean(original$lm$predTest$predictedMeasurements[,"AA.1"]),digits=4)
+plsMeanAA1<-signif(mean(original$pls$predTest$predictedMeasurements[,"AA.1"]),digits=4)
+nnMeanAA1<-signif(mean(original$nn$predTest$predictedMeasurements[,"AA.1"]),digits=4)
+
+actMeanAA2<-signif(mean(testData[,"AA.2"]),digits=4)
+lmMeanAA2<-signif(mean(original$lm$predTest$predictedMeasurements[,"AA.2"]),digits=4)
+plsMeanAA2<-signif(mean(original$pls$predTest$predictedMeasurements[,"AA.2"]),digits=4)
+nnMeanAA2<-signif(mean(original$nn$predTest$predictedMeasurements[,"AA.2"]),digits=4)
+
+actMeanAA3<-signif(mean(testData[,"AA.3"]),digits=4)
+lmMeanAA3<-signif(mean(original$lm$predTest$predictedMeasurements[,"AA.3"]),digits=4)
+plsMeanAA3<-signif(mean(original$pls$predTest$predictedMeasurements[,"AA.3"]),digits=4)
+nnMeanAA3<-signif(mean(original$nn$predTest$predictedMeasurements[,"AA.3"]),digits=4)
+
+```
+
+Item          | Actual        | Linear Model  | PLS-PM        | Neural Net
+------------- | ------------- | ------------- | ------------- | -------------
+AA.0          | `r actMeanAA0`| `r lmMeanAA0` | `r plsMeanAA0`| `r nnMeanAA0`
+AA.1          | `r actMeanAA1`| `r lmMeanAA1` | `r plsMeanAA1`| `r nnMeanAA1`
+AA.2          | `r actMeanAA2`| `r lmMeanAA2` | `r plsMeanAA2`| `r nnMeanAA2`
+AA.3          | `r actMeanAA3`| `r lmMeanAA3` | `r plsMeanAA3`| `r nnMeanAA3`
+
+## PLS vs Linear Regression: Joint Histogram for PCA
+
+```{r, echo=FALSE}
+#Set the panels
+par(mfrow=c(2,2))
+
+title<-"PLS vs LM Residuals"
+
+graphCombinedResiduals("PC1",pca$lm$residualsTest,pca$pls$residualsTest,title,c(-6,6),c(0,0.8),10,"LM","PLS")
+
+graphCombinedResiduals("PC2",pca$lm$residualsTest,pca$pls$residualsTest,title,c(-6,6),c(0,0.8),10,"LM","PLS")
+
+graphCombinedResiduals("PC3",pca$lm$residualsTest,pca$pls$residualsTest,title,c(-6,6),c(0,0.8),10,"LM","PLS")
+
+graphCombinedResiduals("PC4",pca$lm$residualsTest,pca$pls$residualsTest,title,c(-6,6),c(0,0.8),10,"LM","PLS")
+
+```
+
+## Residuals Mean and SD Summary LM vs PLS for PCA.
+
+```{r, echo=FALSE}
+plsMeanAA0<-signif(mean(pca$pls$residualsTest[,"PC1"]),digits=4)
+lmMeanAA0<-signif(mean(pca$lm$residualsTest[,"PC1"]),digits=4)
+
+plsMeanAA1<-signif(mean(pca$pls$residualsTest[,"PC1"]),digits=4)
+lmMeanAA1<-signif(mean(pca$lm$residualsTest[,"PC1"]),digits=4)
+
+plsMeanAA2<-signif(mean(pca$pls$residualsTest[,"PC2"]),digits=4)
+lmMeanAA2<-signif(mean(pca$lm$residualsTest[,"PC2"]),digits=4)
+
+plsMeanAA3<-signif(mean(pca$pls$residualsTest[,"PC3"]),digits=4)
+lmMeanAA3<-signif(mean(pca$lm$residualsTest[,"PC3"]),digits=4)
+
+lmSdAA0<-signif(sd(pca$lm$residualsTest[,"PC1"]),digits=4)
+plsSdAA0<-signif(sd(pca$pls$residualsTest[,"PC1"]),digits=4)
+
+lmSdAA1<-signif(sd(pca$lm$residualsTest[,"PC2"]),digits=4)
+plsSdAA1<-signif(sd(pca$pls$residualsTest[,"PC2"]),digits=4)
+
+lmSdAA2<-signif(sd(pca$lm$residualsTest[,"PC3"]),digits=4)
+plsSdAA2<-signif(sd(pca$pls$residualsTest[,"PC3"]),digits=4)
+
+lmSdAA3<-signif(sd(pca$lm$residualsTest[,"PC4"]),digits=4)
+plsSdAA3<-signif(sd(pca$pls$residualsTest[,"PC4"]),digits=4)
+
+```
+
+Item          | LM (Mean)     | PLS-PM (Mean) | LM (SD)     | PLS-PM (SD)
+------------- | ------------- | ------------- | ------------- | ------------- 
+PC1           | `r lmMeanAA0` | `r plsMeanAA0`| `r lmSdAA0` | `r plsSdAA0`
+PC2           | `r lmMeanAA1` | `r plsMeanAA1`| `r lmSdAA1` | `r plsSdAA1`
+PC3           | `r lmMeanAA2` | `r plsMeanAA2`| `r lmSdAA2` | `r plsSdAA2`
+PC4           | `r lmMeanAA3` | `r plsMeanAA3`| `r lmSdAA3` | `r plsSdAA3`

@@ -18,8 +18,10 @@ graphScatterplot <- function(x,y,z,title,xlabel,ylabel){
        main =title,
        xlab=xlabel,
        ylab=ylabel,
-       col="blue")
-  #abline(lm(y~x), col="red")
+       col="blue",
+       xlim = c(0,round (max(c(x,y)))),
+       ylim = c(0,round (max(c(x,y)))))
+       #abline(lm(y~x), col="red")
   q<-seq(from = 1,to=100)
   w<-seq(from = 1,to=100)
   abline(lm(q~w), col="darkgreen")
@@ -30,9 +32,18 @@ graphScatterplot <- function(x,y,z,title,xlabel,ylabel){
 
 
 #Function that graphs histogram for residual, receives the name of a predicted measurement
-graphCombinedResiduals <- function(measurement,residualsx,residualsy,title,xrange,yrange,breaks){
-  statData <- paste("Red M(LM):",signif(mean(residualsx[,measurement]),digits=4), "SD(LM):",signif(sd(residualsx[,measurement]),digits=4),"\n",
-                    "Blue M(NN):",signif(mean(residualsy[,measurement]),digits=4), "SD(NN):",signif(sd(residualsy[,measurement]),digits=4))
-  hist(residualsx[,measurement], prob=FALSE,xlim=xrange, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
-  hist(residualsy[,measurement], col=rgb(0,0,1,0.5), add=T)
+graphCombinedResiduals <- function(measurement,residualsx,residualsy,title,xrange,yrange,breaks,xlab,ylab){
+  statData <- paste("Red M(",xlab,"):",signif(mean(residualsx[,measurement]),digits=4), "SD(LM):",signif(sd(residualsx[,measurement]),digits=4),"\n",
+                    "Blue M(",ylab,"):",signif(mean(residualsy[,measurement]),digits=4), "SD(PLS):",signif(sd(residualsy[,measurement]),digits=4))
+  hist(residualsx[,measurement], prob=TRUE,xlim=xrange, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
+  hist(residualsy[,measurement], prob=TRUE, col=rgb(0,0,1,0.5), add=T)
+  lines(density(residualsx[,measurement],adjust=1),col="red",lwd=1)  
+  lines(density(residualsy[,measurement],adjust=1),col="blue",lwd=1)  
+}  
+
+#Function that graphs histogram for residual, receives the name of a predicted measurement
+newgraphResiduals <- function(measurement,residuals,title,xrange,yrange){
+  statData <- paste("Mean:",signif(mean(residuals[,measurement]),digits=4), "Standard Deviation:",signif(sd(residuals[,measurement]),digits=4))
+  hist(residuals[,measurement], prob=TRUE,xlim=xrange, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
+  lines(density(residuals[,measurement],adjust=1),col="red",lwd=1)  
 }  
