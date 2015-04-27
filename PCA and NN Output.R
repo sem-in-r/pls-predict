@@ -18,10 +18,45 @@ testData=read.csv("./data/testData_Random.csv")
 #Load Data Suneel
 Anime=read.csv("./data/originalData.csv",header=T)
 set.seed(123)
-index=sample.int(dim(Anime)[1],83,replace=F)
-trainData=Anime[-index,]
-testData=Anime[index,]
+index=sample.int(dim(Anime)[1],183,replace=F)
+
 npred=read.csv("./data/npred.csv")
+
+#Calculate neural net residuals
+nn_residuals <- testData[,c("AA.0","AA.1","AA.2","AA.3")] - npred[,c("AA.0","AA.1","AA.2","AA.3")]
+
+#Load Neural net Prediction
+nn <- list(predTest = list(predictedMeasurements = npred),
+           residualsTest= nn_residuals)
+
+plsPredictTest <- NULL
+plsResidualsTest <- NULL
+
+lmPredictTest <- NULL
+lmResidualsTest <- NULL
+
+crossTrainData <-NULL
+crossTestData <-NULL
+
+for (i in seq(10,100, by =10)){
+  trainData <- Anime[-index[(i-9):i],]
+  testData <- Anime[index[(i-9):i],]
+  
+  result<-runProcess(trainData,testData)
+
+  plsPredictTest<-rbind(plsPredictTest,result$original$pls$predTest$predictedMeasurements)
+  plsResidualsTest<-rbind(plsResidualsTest,result$original$pls$residualsTest)
+
+  lmPredictTest<-rbind(lmPredictTest,result$original$lm$predTest$predictedMeasurements)
+  lmResidualsTest<-rbind(lmResidualsTest,result$original$lm$residualsTest)
+  
+  crossTraintData <-rbind(crossTrainData,trainData)
+  crossTestData <-rbind(crossTestData,testData)
+}
+
+
+#Function of the whole process
+runProcess <- function(trainData,testData){
 
 #Prepare objects
 original <- list (lm = list(),
@@ -31,13 +66,7 @@ original <- list (lm = list(),
 pca <- list (lm = list(),
              pls = list())
 
-#Calculate neural net residuals
-nn_residuals <- testData[,c("AA.0","AA.1","AA.2","AA.3")] - npred[,c("AA.0","AA.1","AA.2","AA.3")]
-
-#Load Neural net Prediction
-nn <- list(predTest = list(predictedMeasurements = npred),
-           residualsTest= nn_residuals)
-original$nn<- nn
+#original$nn<- nn
 
 #----------------------Do PCA Analysis to produce new scenarios---------------------------------
 
@@ -236,6 +265,14 @@ lm <- list(predTrain = list(predictedMeasurements = predTrain),
 
 #Assign to List
 original$lm<-lm
+
+result <- list (original = original,
+                pca = pca)
+
+class(result) <- "result"
+return(result)
+
+}
 
 #--------------------------------------Graphic Analysis---------------------------------
 
