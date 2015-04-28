@@ -37,11 +37,11 @@ crossTrainData <-NULL
 crossTestData <-NULL
 
 #Run a cicle to take 10 subsamples of 10 observations each and run the models
-for (i in seq(10,100, by =10)){
+for (i in seq(18,180, by =18)){
   
   #Get subsamples
-  trainData <- Anime[-index[(i-9):i],]
-  testData <- Anime[index[(i-9):i],]
+  trainData <- Anime[-index[(i-17):i],]
+  testData <- Anime[index[(i-17):i],]
   
   #Run The Models
   result<-runProcess(trainData,testData)
