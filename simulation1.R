@@ -9,7 +9,7 @@ rm(list=ls())
 require(mnormt)
 
 # 3 latent variable from multinormal distribution
-n=100
+n=183
 mu=rep(0,2)
 Sigma=matrix(c(1,0.5,0.5,1),2,2,byrow = T)
 set.seed(123)
@@ -42,3 +42,5 @@ i33=-1+0.6*eta.endo+e
 i34=-1+0.7*eta.endo+e
 
 data=data.frame(cbind(i11,i12,i13,i14,i21,i22,i23,i24,i31,i32,i33,i34))
+
+write.csv(data, "simulated.csv")
