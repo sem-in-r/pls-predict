@@ -30,7 +30,7 @@ mmMatrix <- matrix(c("Perceived Visual Complexity","VX.0","F",
                    dimnames = list(1:13,c("latent","measurement","type")))
 
 #Call PLS-PM Function
-plsModel<-simplePLS(trainData,smMatrix,mmMatrix)
+plsModel<-simplePLS(trainData,smMatrix,mmMatrix,9)
 
 #Call Prediction Function
 predTrain <- PLSpredict(plsModel,trainData)
