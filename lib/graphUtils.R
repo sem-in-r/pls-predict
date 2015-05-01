@@ -13,14 +13,14 @@ graphResiduals <- function(measurement,residuals,title,xrange){
 }  
 
 #Graph to produce a scatterplot comparing two datasets
-graphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0){
+graphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0,xmax=0,ymax=0){
   plot(x-adjust,y,
        main =title,
        xlab=xlabel,
        ylab=ylabel,
        col="blue",
-       xlim = c(0,round (max(c(x,y,z)))),
-       ylim = c(0,round (max(c(x,y,z)))))
+       xlim = c(0,ceiling (max(c(x,xmax)))),
+       ylim = c(0,ceiling (max(c(y,ymax)))))
        #abline(lm(y~x), col="red")
   q<-seq(from = 1,to=100)
   w<-seq(from = 1,to=100)
