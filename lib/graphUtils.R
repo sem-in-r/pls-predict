@@ -25,9 +25,9 @@ graphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0,xmax=0,ymax=0){
   q<-seq(from = 1,to=100)
   w<-seq(from = 1,to=100)
   abline(lm(q~w), col="darkgreen")
-  points(mean(z),mean(z), col= "black",pch=5)
+  points(mean(z),mean(z), col= "red",pch=5)
   points(mean(x),mean(x), col= "red",pch=2)
-  points(mean(y), mean(y), col= "blue",pch=3)
+  points(mean(y), mean(y), col= "red",pch=3)
 }  
 
 
@@ -35,8 +35,8 @@ graphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0,xmax=0,ymax=0){
 graphCombinedResiduals <- function(measurement,residualsx,residualsy,title,xrange,yrange,breaks,xlab,ylab){
   statData <- paste("Red M(",xlab,"):",signif(mean(residualsx[,measurement]),digits=4), "SD(LM):",signif(sd(residualsx[,measurement]),digits=4),"\n",
                     "Blue M(",ylab,"):",signif(mean(residualsy[,measurement]),digits=4), "SD(PLS):",signif(sd(residualsy[,measurement]),digits=4))
-  hist(residualsx[,measurement], prob=TRUE,xlim=xrange, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
-  hist(residualsy[,measurement], prob=TRUE, col=rgb(0,0,1,0.5), add=T)
+  hist(residualsx[,measurement], prob=TRUE,xlim=xrange, breaks =10, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
+  hist(residualsy[,measurement], prob=TRUE, col=rgb(0,0,1,0.5), add=T, breaks =10)
   lines(density(residualsx[,measurement],adjust=1),col="red",lwd=1)  
   lines(density(residualsy[,measurement],adjust=1),col="blue",lwd=1)  
 }  
