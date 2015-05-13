@@ -217,7 +217,7 @@ PLSpredict <- function(plsModel, newData){
   #Normalize data
   for (i in pMeasurements)
   {
-    normData[,i] <-(newData[,i] - meanData[i])/sdData[i]
+    normData[,i] <-(normData[,i] - meanData[i])/sdData[i]
   }  
   
   #Convert dataset to matrix

@@ -47,3 +47,21 @@ newgraphResiduals <- function(measurement,residuals,title,xrange,yrange){
   hist(residuals[,measurement], prob=TRUE,xlim=xrange, ylim=yrange,xlab= statData, main = paste(title,measurement),col=rgb(1,0,0,0.5))
   lines(density(residuals[,measurement],adjust=1),col="red",lwd=1)  
 }  
+
+
+#Graph to produce a scatterplot comparing two datasets
+graphScatterplot42 <- function(x,y,title,xlabel,ylabel,adjust=0,xmax=0,ymax=0,xmin=0,ymin=0){
+  plot(x-adjust,y,
+       main =title,
+       xlab=xlabel,
+       ylab=ylabel,
+       col="blue",
+       xlim = c(floor (min(c(x,xmin))),ceiling (max(c(x,xmax)))),
+       ylim = c(floor (min(c(y,ymin))),ceiling (max(c(y,ymax)))))
+  #abline(lm(y~x), col="red")
+  q<-seq(from = 1,to=100)
+  w<-seq(from = 1,to=100)
+  abline(lm(q~w), col="darkgreen")
+  points(mean(x),mean(x), col= "red",pch=2)
+  points(mean(y), mean(y), col= "red",pch=3)
+}  
