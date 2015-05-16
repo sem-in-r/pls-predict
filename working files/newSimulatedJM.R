@@ -1,64 +1,11 @@
+
+#Clear Environment
 rm (list=ls())
 
+#Load library to get random samples of multivariate normal distribution
 require(mnormt)
 
-# covariance parameters
-Sigma <- matrix(c(10,3,3,2), ncol = 2)
-Sigma
-
-# generate the sample
-y <- rmnorm(n = 1000, varcov = Sigma)
-var(y)
-
-# scatterplot of a random bivariate normal sample with mean
-# vector zero and covariance matrix 'Sigma'
-par(pty = "s")
-plot(y, xlab = "", ylab = "")
-title("bivariate normal sample", font.main = 1)
-
-head(y)
-Sigma=matrix(c(1,0.5,0.5,1),4,2,byrow = T)
-
-x<-matrix(c(4,2,0.6,4.2,2.1,0.59,3.9,2,0.58,4.3,2.1,0.62,4.1,2.2,0.63),5,3,byrow = T)
-
-mean(x)
-
-cov(x)
-
-sd(x[,1])
-
-cov()
-
-
-Sigma <- matrix(c(4,-3,-3,9),2,2)
-y <- rmnorm(n = 1000, varcov = Sigma)
-
-cov(y)
-
-cov(y[,1],y[,1])
-
-
-sd(y[,2])
-
-
-Sigma <- matrix(c(4,2,2,4),2,2)
-
-sigma <- matrix(c(1, 0.9, -0.3, 0.9, 1, -0.4, -0.3, -0.4, 1), ncol = 3)
-
-mu <- c(10, 5, -3)
-
-rmnorm(1000,mu,sigma)
-
-
-
-Sigma <- matrix(c(4,2,2,4),2,2)
-mu <- c(2, 2)
-y<-rmnorm(1000,mu,Sigma)
-plot(y, xlab = "", ylab = "")
-
-
-#HERE STARTS THE REAL SIMULATION
-
+#Seed to the random process
 set.seed(123)
 
 #Four Variables Mean 2 SD =2
@@ -66,6 +13,9 @@ Sigma <- matrix(c(4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4),4,4)
 mu <- c(2, 2, 2, 2)
 x1<-rmnorm(300,mu,Sigma)
 w1<-c(1,1,1,1)
+
+#Create an error term of 1/4 the sd of the variables and add all 
+#the values to creat latent variable 1
 e1<-rnorm(300,mean=0,sd=(1.5*0.25))
 fc1<-(x1%*%w1)
 fc1<-scale(fc1,center=TRUE,scale=TRUE)
@@ -76,36 +26,33 @@ Sigma <- matrix(c(1,0.5,0.5,0.5,0.5,1,0.5,0.5,0.5,0.5,1,0.5,0.5,0.5,0.5,1),4,4)
 mu <- c(0, 0, 0, 0)
 x2<-rmnorm(300,mu,Sigma)
 w2<-c(1,1,1,1)
+#Create an error term of 1/4 the sd of the variables and add all 
+#the values to creat latent variable 1
 e2<-rnorm(300,mean=0,sd=(1*0.25))
 fc2<-(x2%*%w2)
 fc2<-scale(fc2,center=TRUE,scale=TRUE)
 fc2<-fc2+e2
 
-#get the third factor score
-e3<-rnorm(300,mean=0,sd=(0.25))
+#get the third factor score by agregating the previous one plus error from normal distribuiton
+# with mean 0 and standard deviation of 0.25
+e3<-rnorm(300,mean=0,sd=(0.75))
 fc3<-fc1+fc2
 fc3<-scale(fc3,center=TRUE,scale=TRUE)
 fc3<-fc3+e3
 
+#produce some weight out of the randomness
+w3<-rnorm(4,mean=0.5,sd=(0.25))
 
-#Four Variables Mean 0, SD =1
-Sigma <- matrix(c(1,0.5,0.5,0.5,0.5,1,0.5,0.5,0.5,0.5,1,0.5,0.5,0.5,0.5,1),4,4)
-mu <- c(1, 1, 1, 1)
-y<-rmnorm(300,mu,Sigma)
-
-w3<-cov(fc3,y)
-
+#Create the variables
 y3<-fc3%*%w3
-colnames(y3)
 
+y3<-y3+5
+
+#Create the data
 data<-cbind(x1,x2,y3)
 colnames(data)<-c("x11","x12","x13","x14","x21","x22","x23","x24","y1","y2","y3","y4")
 
 head(data)
-
-write.csv(data,"data.csv")
-
-
 
 source("./lib/simplePLS.R")
 source("./lib/graphUtils.R")
@@ -116,7 +63,6 @@ index=sample.int(dim(data)[1],300,replace=F)
 trainData=data[index[1:200],]
 holdData=data[index[201:300],]
 
-#Create the Matrix of the Structural Model
 smMatrix <- matrix(c("Latent Variable 1", "Latent Variable 3",
                      "Latent Variable 2","Latent Variable 3"),nrow=2,ncol=2,byrow =TRUE,
                    dimnames = list(1:2,c("source","target")))
@@ -141,7 +87,6 @@ plsModel<-simplePLS(trainData,smMatrix,mmMatrix)
 
 #Call Prediction Function
 predHold <- PLSpredict(plsModel,holdData)
-
 
 ## fitting neural net model
 require(nnet)
@@ -175,14 +120,14 @@ ymax<-ceiling(max(c(predHold$predictedMeasurements[,"y1"],
                     nnPredData[,"y4"])))
 
 xmin<-floor(min(c(holdData[,"y1"],
-                    holdData[,"y2"],
-                    holdData[,"y3"],
-                    holdData[,"y4"])))
+                  holdData[,"y2"],
+                  holdData[,"y3"],
+                  holdData[,"y4"])))
 
 ymin<-floor(min(c(predHold$predictedMeasurements[,"y1"],
-                    predHold$predictedMeasurements[,"y2"],
-                    predHold$predictedMeasurements[,"y3"],
-                    predHold$predictedMeasurements[,"y4"],
+                  predHold$predictedMeasurements[,"y2"],
+                  predHold$predictedMeasurements[,"y3"],
+                  predHold$predictedMeasurements[,"y4"],
                   nnPredData[,"y1"],
                   nnPredData[,"y2"],
                   nnPredData[,"y3"],
@@ -206,7 +151,7 @@ xlabel=paste("Mean: Act=",
              "NN=",
              signif(sd(z),digits=4))
 ylabel="Predicted"
-graphScatterplot(x,y,z,title,xlabel,ylabel,xmax=0.25,ymax=0.25,xmin=-0.25,ymin=-0.25)
+graphScatterplot(x,y,z,title,xlabel,ylabel,xmax=xmax,ymax=ymax,xmin=xmin,ymin=ymin)
 points(x,z, col= "black")
 
 
@@ -279,10 +224,10 @@ par(mfrow=c(2,2))
 
 title<-"PLS vs NN Residuals"
 
-graphCombinedResiduals("y1",nnPredResiduals,predHold$residuals,title,c(-2,2),c(0,10),10,"NN","PLS")
+graphCombinedResiduals("y1",nnPredResiduals,predHold$residuals,title,c(-4,4),c(0,1.5),10,"NN","PLS")
 
-graphCombinedResiduals("y2",nnPredResiduals,predHold$residuals,title,c(-2,2),c(0,10),10,"NN","PLS")
+graphCombinedResiduals("y2",nnPredResiduals,predHold$residuals,title,c(-4,4),c(0,1.5),10,"NN","PLS")
 
-graphCombinedResiduals("y3",nnPredResiduals,predHold$residuals,title,c(-2,2),c(0,10),10,"NN","PLS")
+graphCombinedResiduals("y3",nnPredResiduals,predHold$residuals,title,c(-4,4),c(0,1.5),10,"NN","PLS")
 
-graphCombinedResiduals("y4",nnPredResiduals,predHold$residuals,title,c(-2,2),c(0,10),10,"NN","PLS")
+graphCombinedResiduals("y4",nnPredResiduals,predHold$residuals,title,c(-4,4),c(0,1.5),10,"NN","PLS")
