@@ -9,39 +9,45 @@ rm(list=ls())
 
 require(simsem)
 
-loading <- matrix(0, 12, 3)
+loading <- matrix(0, 16, 4)
 loading[1:4, 1] <- NA
 loading[5:8, 2] <- NA
 loading[9:12, 3] <- NA
+loading[13:16, 4] <- NA
 
 LY <- bind(loading, 0.7)
 
 ## Latent variables
 
-latent.cor <- matrix(NA, 3, 3)
+latent.cor <- matrix(NA, 4, 4)
 diag(latent.cor) <- 1
 RPS <- binds(latent.cor, 0.5)
-RTE <- binds(diag(12))
-VY <- bind(rep(NA,12),3)
+RTE <- binds(diag(16))
+VY <- bind(rep(NA,16),4)
 
 # Regression 
-path <- matrix(0, 3, 3)
+path <- matrix(0, 4, 4)
 path[3, 1:2] <- NA
-path.start <- matrix(0, 3, 3)
+path[4, 3] <- NA
+path.start <- matrix(0, 4, 4)
 path.start[3, 1] <- "rnorm(1,0.6,0.05)"
 path.start[3, 2] <- "runif(1,0.3,0.5)"
+path.start[4, 3] <- "rnorm(1,-0.3,0.5)"
 BE <- bind(path, path.start)
 
 
 
 CFA.Model <- model(BE=BE,LY = LY, RPS = RPS, RTE = RTE, modelType = "SEM")
-dat <- generate(CFA.Model,500)
+dat <- generate(CFA.Model,300)
+
 
 colnames(dat)=c("x11","x12","x13","x14",
                 "x21","x22","x23","x24",
+                "x31","x32","x33","x34",
                 "y1","y2","y3","y4")
 head(dat)
 
+write.csv(dat,"data_meeting_11_simsem.csv")
 
 ## data partition
 set.seed(1)
