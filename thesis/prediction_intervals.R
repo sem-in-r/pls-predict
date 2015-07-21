@@ -13,8 +13,6 @@ source("./lib/graphUtils.R")
 #Seed to the random process
 set.seed(123)
 
-#Get the index for the Training and the test data
-index=sample.int(dim(semData)[1],300,replace=F)
 
 #Create the Matrix of the Structural Model
 smMatrix <- matrix(c("LV1", "LV3",
@@ -34,9 +32,75 @@ mmMatrix <- matrix(c("LV1","x11","F",
                      "LV3","x34","R"),nrow=10,ncol=3,byrow =TRUE,
                    dimnames = list(1:10,c("latent","measurement","type")))
 
-#scramble the measruements
-semData <-semData[index,]
+#Get the index for the Training and the test data
+index=sample.int(dim(semData)[1],1000,replace=T)
 
+#Obtain Train subsample
+trainData <-semData[index,]
+
+#Prepare container for data
+plsPredictions<-matrix(nrow=300000, ncol=4, dimnames = list(1:300000,c("x31","x32","x33","x34")))
+
+lowindex <- 1
+highindex <- 0
+
+#Bootstrap Cycle
+for (i in 1:1000 ) {
+  highindex <- i*300
+  
+  #Call PLS-PM Function
+  plsModel<-simplePLS(trainData,smMatrix,mmMatrix)
+
+  #Call Prediction Function
+  predTest <- PLSpredict(plsModel,semData)
+  
+  #Put the predicitons in the 
+  plsPredictions[(lowindex:highindex),] <- predTest$predictedMeasurements
+  
+  #Resample Again
+  
+  #Get the index for the Training and the test data
+  index=sample.int(dim(semData)[1],1000,replace=T)
+  
+  #Obtain Train subsample
+  trainData <-semData[index,]
+
+  #Prepare the low index for next iteration
+  lowindex <- highindex +1
+  
+}
+  
+plsPredictions
+
+
+#Set the panels
+par(mfrow=c(2,2))
+
+x7<-plsPredictions[seq(from=1, to =300000, by = 300),1]
+intX7<-quantile(x7,  probs = c(0.025,0.975))
+meanx7<-mean (x7)
+
+d <- density(x7) # returns the density data 
+plot(d, main="Distribution 1st. Observation (X7)",xlab =  paste("Actual = ", round(semData[1,"x31"],3) ," Mean = ",round(meanx7,3)," 95% Confidence Prediction Interval = (",round(intX7[1],3),"<->",round(intX7[2],3),")" )) # plots the results
+abline (v=meanx7)
+abline (v=intX7[1])
+abline (v=intX7[2])
+
+plsPredictions[1:4,]
+semData [1:4,]
+
+x8<-plsPredictions[seq(from=1, to =300000, by = 300),2]
+intX8<-quantile(x8,  probs = c(0.025,0.975))
+meanx8<-mean (x8)
+
+d <- density(x8) # returns the density data 
+plot(d, main="Distribution 1st. Observation (X8)",xlab =  paste("Mean = ",round(meanx8,3)," 95% Confidence Prediction Interval = (",round(intX8[1],3),"<->",round(intX8[2],3),")" )) # plots the results
+abline (v=meanx8)
+abline (v=intX8[1])
+abline (v=intX8[2])
+
+
+intX7[1]
 #Cycle for the k-fold analysis
 size <- length(index)
 n <- 10 
@@ -50,7 +114,7 @@ lm.predictedMeasurements<-semData [,c("x31","x32","x33","x34")]
 #Iterative process
 for (i in seq(from=30, to =size, by = range) ) {
   highindex <- i
-
+  
   #Get the training and the test data
   trainData=semData[-(lowindex:highindex),]
   testData=semData[(lowindex:highindex),]
@@ -63,7 +127,7 @@ for (i in seq(from=30, to =size, by = range) ) {
   
   #Put the predicitons in the 
   pls.predictedMeasurements[(lowindex:highindex),] <- predTest$predictedMeasurements
-
+  
   #Multiple LInear Regeresion for each output variable
   lmX31 <- with(trainData, lm(x31 ~ x11+x12+x13+x21+x22+x23))
   lmX32 <- with(trainData, lm(x32 ~ x11+x12+x13+x21+x22+x23))

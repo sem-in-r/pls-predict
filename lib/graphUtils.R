@@ -37,7 +37,7 @@ graphCombinedResiduals <- function(measurement,residualsx,residualsy,title,xrang
                     ylab,"(Solid) Avg Error:",signif(mean(residualsy[,measurement]),digits=4), "RMSE:",signif(sd(residualsy[,measurement]),digits=4))
   #hist(residualsx[,measurement], prob=TRUE,xlim=xrange, breaks =10, ylim=yrange,xlab= statData, main = paste(title,measurement),col=xcolor)
   #hist(residualsy[,measurement], prob=TRUE, col=ycolor, add=T, breaks =10)
-  plot(density(residualsx[,measurement],adjust=1),col=xcolor,lwd=2,lty=2,xlab= statData, main = paste(title,measurement))  
+  plot(density(residualsx[,measurement],adjust=1),col=xcolor,lwd=2,lty=2,xlab= statData, main = paste(title))  
   lines(density(residualsy[,measurement],adjust=1),col=ycolor,lwd=1,lty=1)  
 }  
 
