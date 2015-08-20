@@ -55,7 +55,7 @@ graphScatterplot42 <- function(x,y,title,xlabel,ylabel,adjust=0,xmax=0,ymax=0,xm
        main =title,
        xlab=xlabel,
        ylab=ylabel,
-       col="black",
+       col=rgb(0,0,0,0.5),
        xlim = c(floor (min(c(x,xmin))),ceiling (max(c(x,xmax)))),
        ylim = c(floor (min(c(y,ymin))),ceiling (max(c(y,ymax)))))
   #abline(lm(y~x), col="red")
@@ -72,7 +72,7 @@ dualGraphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0,xmax=0,ymax=
        main =title,
        xlab=xlabel,
        ylab=ylabel,
-       col="black",
+       col=rgb(0.25,0.25,0.25,0.5),
        xlim = c(floor (min(c(x,xmin))),ceiling (max(c(x,xmax)))),
        ylim = c(floor (min(c(y,ymin))),ceiling (max(c(y,ymax)))))
   par(new=T)
@@ -80,10 +80,10 @@ dualGraphScatterplot <- function(x,y,z,title,xlabel,ylabel,adjust=0,xmax=0,ymax=
        main =title,
        xlab=xlabel,
        ylab=ylabel,
-       col="black",
+       col=rgb(0,0,0,0.5),
        xlim = c(floor (min(c(x,xmin))),ceiling (max(c(x,xmax)))),
        ylim = c(floor (min(c(z,ymin))),ceiling (max(c(z,ymax)))),
-       ,pch=3)
+       pch=3)
   q<-seq(from = 1,to=100)
   w<-seq(from = 1,to=100)
   abline(lm(q~w), col="darkgreen")
