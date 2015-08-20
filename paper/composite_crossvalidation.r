@@ -90,6 +90,12 @@ for (i in seq(from=30, to =size, by = range) ) {
 }
 
 
+
+#GRAPH GENERATION SECTION
+
+#GRAPH 1 ACTUALS VS PREDICTED
+
+
 #Set the panels
 par(mfrow=c(2,2))
 
@@ -202,6 +208,10 @@ xlabel=paste("Means: Act=",
 ylabel="Predicted"
 dualGraphScatterplot(x,y,z,title,xlabel,ylabel,xmax=xmax,ymax=ymax,xmin=xmin,ymin=ymin)
 
+
+#GRAPH 2 PLS VS LM (AGREABILITY)
+
+
 #Set the panels
 par(mfrow=c(2,2))
 
@@ -257,6 +267,10 @@ title="LM vs PLS (Y4)"
 xlabel="Linear Model"
 ylabel="PLS"
 graphScatterplot42(x,y,title,xlabel,ylabel,xmax=xmax,ymax=ymax,xmin=xmin,ymin=ymin)
+
+
+#GRAPH 3 PREDICTION ERRORS
+
 
 #Set the panels
 par(mfrow=c(2,2))
