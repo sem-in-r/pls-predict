@@ -34,6 +34,7 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
   }
   
   #Create a matrix of inner paths
+  #? inner_paths => inner_weights?
   inner_paths <- matrix(data=0,
                         nrow=length(ltVariables),
                         ncol=length(ltVariables),
@@ -43,16 +44,18 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
   for (iterations in 0:maxIt)  {
     
     #Estimate Factor Scores from Outter Path
+    #? fscores <- normData%*%outer_weights
     fscores <- normData[,mmVariables]%*%outer_weights
     
-    #Standarize Values
-    fscores<- scale(fscores,TRUE,TRUE)
+    #Standarize Factor Scores
+    fscores <- scale(fscores,TRUE,TRUE)
     
-    #Estimate inner paths
+    #Estimate inner paths (symmetric matrix)
     for (i in 1:nrow(smMatrix))  {
       inner_paths[smMatrix[i,"source"],
                   smMatrix[i,"target"]] = cov(fscores[,smMatrix[i,"source"]],
                                               fscores[,smMatrix[i,"target"]])
+      #? next step necessary?
       inner_paths[smMatrix[i,"target"],
                   smMatrix[i,"source"]] = cov(fscores[,smMatrix[i,"source"]],
                                               fscores[,smMatrix[i,"target"]])
@@ -61,43 +64,37 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
     #Estimate Factor Scores from Inner Path
     fscores<-fscores%*%inner_paths
     
-    #Standarize Values
-    fscores<- scale(fscores,TRUE,TRUE)
+    #Standarize Factor Scores
+    fscores <- scale(fscores,TRUE,TRUE)
     
     #Save last outer_weights
-    last_outer_weights <-outer_weights
+    last_outer_weights <- outer_weights
     
     #Update outer_weights
     for (i in 1:length(ltVariables))  {
       
       #If the measurement model is Formative
       if(mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"type"][1]=="F"){
-        outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i],
-                                "measurement"],
-                       ltVariables[i]] = solve(cor(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]])) %*%
-          cor(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]],fscores[,ltVariables[i]])
+        outer_weights[mmMatrix[mmMatrix[,"latent"]==ltVariables[i], "measurement"], ltVariables[i]] = 
+          solve(cor(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]])) %*%
+                  cor(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]],
+                fscores[,ltVariables[i]])
       }
       
       #If the measurement model is Reflective
       if(mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"type"][1]=="R"){
-        outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i],
-                                "measurement"],
-                       ltVariables[i]] = cov(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]],fscores[,ltVariables[i]])
+        outer_weights[mmMatrix[mmMatrix[,"latent"]==ltVariables[i], "measurement"], ltVariables[i]] = 
+          cov(normData[,mmMatrix[mmMatrix[,"latent"]==ltVariables[i],"measurement"]],fscores[,ltVariables[i]])
       }
-      
-      
     }
     
-    #Estimate Factor Scores from Outter Path
+    #Estimate Factor Scores from Outer Weights
     fscores <- normData[,mmVariables]%*%outer_weights
     
     #Standarize outer_weights
     for (i in 1:length(ltVariables))  {
-      outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i],
-                              "measurement"],
-                     ltVariables[i]]=outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i],
-                                                             "measurement"],
-                                                    ltVariables[i]]/sd(fscores[,ltVariables[i]])
+      outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i], "measurement"], ltVariables[i]] =
+        outer_weights [mmMatrix[mmMatrix[,"latent"]==ltVariables[i], "measurement"], ltVariables[i]] / sd(fscores[,ltVariables[i]])
     }
 
     #Verify the stop criteria
