@@ -3,7 +3,7 @@
 rm(list=ls())
 
 #Creating Simulated Data
-source("./thesis/simsem.R")
+source("./paper/simsem.R")
 
 #Creating Model
 

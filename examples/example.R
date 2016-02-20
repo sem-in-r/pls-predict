@@ -2,7 +2,7 @@
 source("./lib/simplePLS.R")
 
 #Load Data
-Anime=read.csv("./data/originalData.csv",header=T)
+Anime=read.csv("./data/AnimData.csv",header=T)
 set.seed(123)
 index=sample.int(dim(Anime)[1],83,replace=F)
 trainData=Anime[-index,]

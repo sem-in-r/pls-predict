@@ -2,7 +2,7 @@
 rm(list=ls())
 
 #Creating Simulated Data
-source("./thesis/simsem.R")
+source("./paper/simsem.R")
 
 #Creating Model
 
@@ -156,6 +156,10 @@ for (i in seq(from=30, to =size, by = range) ) {
 par(mfrow=c(2,2))
 
 #Find scales
+## RAY
+pls.predictedMeasurements <- pls.predictedMeasurements[1:300,]
+lm.predictedMeasurements <- lm.predictedMeasurements[1:300,]
+## /RAY
 xmax<-ceiling(max(c(semData[,"x31"],
                     semData[,"x32"],
                     semData[,"x33"],
