@@ -286,3 +286,60 @@ predictlm <- function(model,newData){
   return (result)
 }  
 
+
+#Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validaiton
+validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
+  
+  #Randomly shuffle the data
+  newData <- newData[sample(nrow(newData)),]
+  
+  #Create 10 equally size folds
+  folds <- cut(seq(1,nrow(newData)),breaks=10,labels=FALSE)
+  
+  #Identify variables to be tested
+  items <- mmMatrix[ which(mmMatrix[,3]=='R'), "measurement" ]
+  
+  # Initialize matrices for prediction metrics
+  # Initialize predRMSE
+  predRMSE <- matrix(,nrow=10,ncol=length(items),byrow =TRUE,dimnames = list(1:10,items))
+  # Initialize predMAPE
+  predMAPE <- matrix(,nrow=10,ncol=length(items),byrow =TRUE,dimnames = list(1:10,items))
+  # Initialize predMAD
+  predMAD <- matrix(,nrow=10,ncol=length(items),byrow =TRUE,dimnames = list(1:10,items))
+  
+  #Perform 10 fold cross validation
+  for(i in 1:10){
+    #Segment your data by fold using the which() function 
+    testIndexes <- which(folds==i,arr.ind=TRUE)
+    testData <- newData[testIndexes, ]
+    trainData <- newData[-testIndexes, ]
+    
+    #Train the PLS model
+    modelHolder <- simplePLS(trainData,smMatrix, mmMatrix, maxIt, stopCriterion)
+    
+    #  Test the PLS model
+    testHolder <- PLSpredict(modelHolder, testData)
+    
+    
+    #Iterate over no of residuals columns
+    for(j in 1:ncol(testHolder$residuals)){
+      
+      #Calculate RMSE
+      predRMSE[i,j] <- sqrt( mean( (testHolder$residuals[,j])^2 , na.rm = TRUE ) )
+      
+      #Calculate MAPE
+      predMAPE[i,j] <- mean((abs((testHolder$newData[,j] - testHolder$predictedMeasurements[,j])/testHolder$newData[,j])), na.rm = TRUE)
+      
+      #Calculate MAD
+      predMAD[i,j] <- mean(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])), na.rm = TRUE)
+    }
+  }
+
+validateResults <- list(predRMSE = predRMSE, 
+                        predMAPE = predMAPE,
+                        predMAD = predMAD)
+return(validateResults)
+
+
+  
+}
