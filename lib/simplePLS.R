@@ -155,6 +155,31 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
     
   }
 
+  #Calculate R Squared
+  
+  #Get smMatrix
+  modelMatrix <- data.frame(smMatrix)
+  
+  #Get endogenous composites
+  uniquetarget <- as.character(unique(modelMatrix$target)) 
+  
+  #Get composite scores
+  valuesMatrix <- fscores
+  
+  #Calculate Linear Models
+  lmmodels <- lapply(uniquetarget, function(x) {lm(as.formula(paste(x,"~ .", sep = "")), 
+                                                   data = data.frame(valuesMatrix[,colnames(valuesMatrix) %in% 
+                                                                                    c(x,as.character(modelMatrix$source[which(modelMatrix$target==x)]))]))})
+  
+  #Initialize matrix holder for Rsquared values
+  rSquared <- matrix(,nrow=1,ncol=length(uniquetarget),byrow =TRUE,dimnames = list(1,uniquetarget))
+  
+  # Iterate and extract every R^2 value 
+  for (i in 1:length(lmmodels)) {
+    rSquared[,i] <- summary(lmmodels[[i]])$r.squared
+  }
+  
+    
   #Prepare return Object
   plsModel <- list(meanData = meanData,
                    sdData = sdData,
@@ -167,7 +192,8 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
                    path_coef = path_coef,
                    iterations = iterations,
                    weightDiff = weightDiff,
-                   fscores = fscores)
+                   fscores = fscores,
+                   rSquared = rSquared)
   
   class(plsModel) <- "plsModel"
   return(plsModel)
