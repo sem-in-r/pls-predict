@@ -166,14 +166,18 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
                    outer_weights = outer_weights,
                    path_coef = path_coef,
                    iterations = iterations,
-                   weightDiff = weightDiff)
+                   weightDiff = weightDiff,
+                   fscores = fscores)
   
   class(plsModel) <- "plsModel"
   return(plsModel)
 }
 
 #Function that receives a model and predicts measurements
-PLSpredict <- function(plsModel, newData){
+PLSpredict <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7, newData = obsData){
+  
+  #Call simplePLS function
+  plsModel <- simplePLS(obsData, smMatrix, mmMatrix, maxIt, stopCriterion)
   
   #Get results from model
   smMatrix <- plsModel$smMatrix
@@ -256,7 +260,8 @@ PLSpredict <- function(plsModel, newData){
   #Prepare return Object
   predictResults <- list(newData = newData[,eMeasurements],
                          predictedMeasurements = predictedMeasurements[,eMeasurements],
-                         residuals = residuals)
+                         residuals = residuals,
+                         compositeScores = fscores)
   
   class(predictResults) <- "predictResults"
   return(predictResults)
@@ -325,13 +330,13 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
     for(j in 1:ncol(testHolder$residuals)){
       
       #Calculate RMSE
-      predRMSE[i,j] <- sqrt( mean( (testHolder$residuals[,j])^2 , na.rm = TRUE ) )
+      foldRMSE[i,j] <- sqrt( mean( (testHolder$residuals[,j])^2) )
       
       #Calculate MAPE
-      predMAPE[i,j] <- mean((abs((testHolder$newData[,j] - testHolder$predictedMeasurements[,j])/testHolder$newData[,j])), na.rm = TRUE)
+      foldMAPE[i,j] <- mean((abs((testHolder$newData[,j] - testHolder$predictedMeasurements[,j])/testHolder$newData[,j])))
       
       #Calculate MAD
-      predMAD[i,j] <- mean(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])), na.rm = TRUE)
+      foldMAD[i,j] <- mean(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])))
     }
   }
 
