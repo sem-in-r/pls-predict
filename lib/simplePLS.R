@@ -338,6 +338,8 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
   # Initialize predMAD
   predMAD <- matrix(,nrow=10,ncol=length(items),byrow =TRUE,dimnames = list(1:10,items))
   
+  
+  
   #Perform 10 fold cross validation
   for(i in 1:10){
     #Segment your data by fold using the which() function 
