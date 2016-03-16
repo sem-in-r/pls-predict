@@ -380,3 +380,16 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
   return(validateResults)
 
 }
+#Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validaiton
+predictionInterval <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noBoots=200){
+    
+  #Casewise Prediction Intervals
+  
+  #Bootstrap
+  
+  #Call PLSpredict
+  
+  #In each bootstrap compute n residuals for item
+  
+  #for each item add random error to each prediction 
+}
