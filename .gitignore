@@ -1,7 +1,6 @@
-.Rproj.user
 .Rhistory
 .RData
-pls-pm.Rproj
+*.Rproj*
 environmentpls.RData
 
 *_next.*

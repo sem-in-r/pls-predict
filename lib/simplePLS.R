@@ -380,14 +380,33 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
   return(validateResults)
 
 }
-#Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validaiton
-predictionInterval <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noBoots=200){
+#Function for generating average case and casewise Prediction Intervals
+predictionInterval <- function(obsData, PIprobs, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noBoots=200, newData = obsData){
     
-  #Casewise Prediction Intervals
-  
+  #Average Case Prediction Intervals
+  tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(obsData)))
+  items <- mmMatrix[ which(mmMatrix[,3]=='R'), "measurement" ]
   #Bootstrap
+  for (i in 1:noBoots) 
+    { 
+    boot.index <- sort(sample(1:nrow(newData), replace=TRUE))
+    newData.boot <- newData[boot.index,] 
+    
+    #Call PLSpredict
+    tempModel <- PLSpredict(newData.boot,smMatrix, mmMatrix, maxIt, stopCriterion, obsData)
+    tempPredict <- cbind(tempPredict,data.frame(tempModel$predictedMeasurements))
   
-  #Call PLSpredict
+    }
+  # Initialize Quantiles holder
+  quantHolder <- list(NULL)
+  
+  # Calculate Quantiles
+  
+  for (i in 1:length(items))
+  {
+    
+    quantHolder[[1]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==items[1]] , 1, quantile, probs = c(0.05, 0.9),  na.rm = TRUE))
+  }
   
   #In each bootstrap compute n residuals for item
   
