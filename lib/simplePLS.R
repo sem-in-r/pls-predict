@@ -4,6 +4,8 @@
 #Description: This library contains the functions utilized to run the PLS-PM 
 # algorithm and its predictions.
 
+require(TeachingDemos)
+
 #Function that estimates the PLS-PM Model
 simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
   
@@ -155,6 +157,31 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
     
   }
 
+  #Calculate R Squared
+  
+  #Get smMatrix
+  modelMatrix <- data.frame(smMatrix)
+  
+  #Get endogenous composites
+  uniquetarget <- as.character(unique(modelMatrix$target)) 
+  
+  #Get composite scores
+  valuesMatrix <- fscores
+  
+  #Calculate Linear Models
+  lmmodels <- lapply(uniquetarget, function(x) {lm(as.formula(paste(x,"~ .", sep = "")), 
+                                                   data = data.frame(valuesMatrix[,colnames(valuesMatrix) %in% 
+                                                                                    c(x,as.character(modelMatrix$source[which(modelMatrix$target==x)]))]))})
+  
+  #Initialize matrix holder for Rsquared values
+  rSquared <- matrix(,nrow=1,ncol=length(uniquetarget),byrow =TRUE,dimnames = list(1,uniquetarget))
+  
+  # Iterate and extract every R^2 value 
+  for (i in 1:length(lmmodels)) {
+    rSquared[,i] <- summary(lmmodels[[i]])$r.squared
+  }
+  
+    
   #Prepare return Object
   plsModel <- list(meanData = meanData,
                    sdData = sdData,
@@ -166,103 +193,14 @@ simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
                    outer_weights = outer_weights,
                    path_coef = path_coef,
                    iterations = iterations,
-                   weightDiff = weightDiff)
+                   weightDiff = weightDiff,
+                   fscores = fscores,
+                   rSquared = rSquared)
   
   class(plsModel) <- "plsModel"
   return(plsModel)
 }
 
-#Function that receives a model and predicts measurements
-PLSpredict <- function(plsModel, newData){
-  
-  #Get results from model
-  smMatrix <- plsModel$smMatrix
-  mmMatrix <- plsModel$mmMatrix
-  ltVariables <- plsModel$ltVariables
-  mmVariables <- plsModel$mmVariables
-  outer_weights <- plsModel$outer_weights
-  outer_loadings <- plsModel$outer_loadings
-  meanData<-plsModel$meanData
-  sdData <- plsModel$sdData
-  path_coef<-plsModel$path_coef
-  
-  #Create container for Exogenous Variables
-  exVariables = NULL
-  
-  #Create container for Endogenous Variables
-  enVariables = NULL
-  
-  #Identify Exogenous and Endogenous Variables
-  for (i in 1:length(ltVariables)){
-    if (is.element(ltVariables[i], smMatrix[,"target"])==FALSE)
-      exVariables <- c(exVariables, ltVariables[i])
-    else
-      enVariables <- c(enVariables, ltVariables[i])
-  }
-  
-  #Create container for prediction Measurements
-  pMeasurements = NULL
-  
-  #Identify prediction measurements
-  for (i in 1:length(exVariables)){
-    pMeasurements <- c(pMeasurements,mmMatrix[mmMatrix[,"latent"]==exVariables[i],"measurement"])
-  }
-  
-  #Extract Measurements needed for Predictions
-  normData <- newData[,pMeasurements]
-  
-  #Normalize data
-  for (i in pMeasurements)
-  {
-    normData[,i] <-(normData[,i] - meanData[i])/sdData[i]
-  }  
-  
-  #Convert dataset to matrix
-  normData<-data.matrix(normData)
-  
-  #Create container for estimated measurements
-  eMeasurements = NULL
-  
-  #Identify estimated measurements
-  for (i in 1:length(enVariables)){
-    eMeasurements <- c(eMeasurements,mmMatrix[mmMatrix[,"latent"]==enVariables[i],"measurement"])
-  }
-  
-  #Add empty columns to normData for the estimated measurements
-  for (i in 1:length(eMeasurements))
-  {
-    normData = cbind(normData, seq(0,0,length.out =nrow(normData)))
-    colnames(normData)[length(colnames(normData))]=eMeasurements[i]
-  }
-  
-  #Estimate Factor Scores from Outter Path
-  fscores <- normData%*%outer_weights
-  
-  #Estimate Factor Scores from Inner Path and complete Matrix
-  fscores <- fscores + fscores%*%path_coef
-  
-  #Predict Measurements with loadings
-  predictedMeasurements<-fscores%*% t(outer_loadings)
-  
-  #Denormalize data
-  for (i in mmVariables)
-  {
-    predictedMeasurements[,i]<-(predictedMeasurements[,i] * sdData[i])+meanData[i]
-  }  
-  
-  #Calculating the residuals
-  residuals <- newData[,eMeasurements] - predictedMeasurements[,eMeasurements]
-  
-  #Prepare return Object
-  predictResults <- list(newData = newData[,eMeasurements],
-                         predictedMeasurements = predictedMeasurements[,eMeasurements],
-                         residuals = residuals)
-  
-  class(predictResults) <- "predictResults"
-  return(predictResults)
-  
-  
-}
 
 #Function that given a linear model, receives new data and uses the model to make predictions
 predictlm <- function(model,newData){
@@ -285,4 +223,6 @@ predictlm <- function(model,newData){
   #Return the prediction
   return (result)
 }  
+
+
 
