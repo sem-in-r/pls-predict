@@ -1,6 +1,5 @@
 .Rhistory
-.RData
+*.RData
 *.Rproj*
-environmentpls.RData
 
 *_next.*
