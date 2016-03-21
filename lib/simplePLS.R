@@ -383,30 +383,41 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
 #Function for generating average case and casewise Prediction Intervals
 predictionInterval <- function(obsData, PIprobs, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noBoots=200, newData = obsData){
     
-  #Average Case Prediction Intervals
+  # AVERAGE CASE PREDICTION INTERVAL
+  # initialize output prediction dataframe
+  # TODO: get output factors (don't assume they are reflective)
   tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(obsData)))
   items <- mmMatrix[ which(mmMatrix[,3]=='R'), "measurement" ]
+  
   #Bootstrap
-  for (i in 1:noBoots) 
-    { 
+  for (i in 1:noBoots) { 
     boot.index <- sort(sample(1:nrow(newData), replace=TRUE))
     newData.boot <- newData[boot.index,] 
     
     #Call PLSpredict
     tempModel <- PLSpredict(newData.boot,smMatrix, mmMatrix, maxIt, stopCriterion, obsData)
     tempPredict <- cbind(tempPredict,data.frame(tempModel$predictedMeasurements))
+  }
   
-    }
   # Initialize Quantiles holder
   quantHolder <- list(NULL)
   
   # Calculate Quantiles
-  
-  for (i in 1:length(items))
-  {
-    
-    quantHolder[[1]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==items[1]] , 1, quantile, probs = c(0.05, 0.9),  na.rm = TRUE))
+  for (i in 1:length(items)) {
+    quantHolder <- data.frame(apply(tempPredict[,colnames(tempPredict)==items[1]] , 1, quantile, probs = c(0.025, 0.975),  na.rm = TRUE))
   }
+  quantHolder <- matrix(as.matrix(quantHolder), ncol = ncol(quantHolder), dimnames = NULL)
+  
+  ## CHECK OF VALUES IN INTERVAL ##
+  origVal <- tempModel$newData$AA.0[i]
+  findInterval(origVal, quantHolder[,i])
+  
+  withinInterval = c()
+  for (i in 1:183) {
+    origVal <- tempModel$newData$AA.0[i]
+    withinInterval[i] = (findInterval(origVal, quantHolder[,i]) == 1)
+  }
+  ## END CHECK
   
   #In each bootstrap compute n residuals for item
   
