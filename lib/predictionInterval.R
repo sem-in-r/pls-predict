@@ -1,6 +1,4 @@
 #predictionInterval
-#Authors: Nicholas Danks
-#Creation: March 2016
 #Description: This library contains the function utilized to generate a prediction Interval 
 # for a PLSpredict prediction.
 

@@ -1,6 +1,4 @@
 #PLSpredict
-#Authors: Juan Manuel Velasquez Estrada & Nicholas Danks
-#Creation: March 2015
 #Description: This library contains the functions utilized to run the PLS-PM 
 # algorithm and its predictions.
 

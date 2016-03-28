@@ -1,3 +1,7 @@
+# validatePredict
+# Description: This library contains the function utilized to generate perform a k-fold validation 
+# and subsequent calculation of prediction metrics (RMSE, MAPE, MAD)
+
 #Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validaiton
 validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noFolds=10){
   
