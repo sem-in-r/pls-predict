@@ -56,7 +56,7 @@ pls <- list(predTrain = predTrain,
 
 #Call validatepredict
 
-predictionMetrics <- validatePredict(testData, smMatrix, mmMatrix,noFolds=10)
+predictionMetrics <- validatePredict(trainData, smMatrix, mmMatrix,noFolds=10)
 predictionMetrics$totalRMSE
 predictionMetrics$totalMAPE
 predictionMetrics$totalMAD

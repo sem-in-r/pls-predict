@@ -44,9 +44,9 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
       predSSE[i,j] <- sum(testHolder$residuals[,j]^2) 
       
       #Calculate SAPE
-      predSAPE[i,j] <- sum((abs(testHolder$residuals[,j]/testHolder$testData[,j])))
-      #predSAPE[i,j] <- sum((abs((testHolder$testData[,j] - testHolder$predictedMeasurements[,j])/testHolder$testData[,j])))
-      #predSAPE[i,j] <- sum((abs((testHolder$testData[,j] - testHolder$predictedMeasurements[,j])/mean(testHolder$testData[,j]))))
+      #predSAPE[i,j] <- sum((abs(testHolder$residuals[,j]/testHolder$testData[,j])))
+      predSAPE[i,j] <- sum((abs((mean(testHolder$testData[,j]) - testHolder$predictedMeasurements[,j])/mean(testHolder$testData[,j]))))
+      #predSAPE[i,j] <- sum((abs((testHolder$residuals[,j])/mean(testHolder$testData[,j]))))
       
       #Calculate SAD
       predSAD[i,j] <- sum(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])))
