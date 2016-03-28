@@ -1,5 +1,8 @@
 #Load our Algorithm
 source("./lib/simplePLS.R")
+source("./lib/PLSpredict.R")
+source("./lib/predictionInterval.R")
+source("./lib/validatePredict.R")
 
 #Load Data
 Anime=read.csv("./data/AnimData.csv",header=T)
@@ -32,8 +35,11 @@ mmMatrix <- matrix(c("PerceivedVisualComplexity","VX.0","F",
 #Call PLS-PM Function
 plsModel<-simplePLS(Anime,smMatrix,mmMatrix,300,7)
 
-#Call Prediction Function
-predTrain <- PLSpredict(trainData, smMatrix, mmMatrix, 300,9, testData)
+#Call Prediction Function 
+predTrain <- PLSpredict(Anime, Anime, smMatrix, mmMatrix, 300,9)
+
+#Call predictionInterval
+PIntervals <- predictionInterval(Anime, smMatrix, mmMatrix, PIprobs = 0.9, noBoots = 2000)
 
 #Predicted compositescores
 predTrain$compositeScores
@@ -54,3 +60,14 @@ predictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)
 predictionMetrics$totalRMSE
 predictionMetrics$totalMAPE
 predictionMetrics$totalMAD
+
+
+#Boxplot of AA.o PI, CI, predicted and actual
+average <- data.frame(PIntervals$averageCasePI[1])
+casewise <- data.frame(PIntervals$caseWisePI[1])
+boxplot(average)
+points(predTrain$predictedMeasurements[,1], pch = 18, col = "red", lwd = 1)
+points(predTrain$testData[,1], pch = 3, col = "blue", lwd = 1)
+boxplot(casewise)
+points(predTrain$predictedMeasurements[,1], pch = 18, col = "red", lwd = 1)
+points(predTrain$testData[,1], pch = 3, col = "blue", lwd = 1)

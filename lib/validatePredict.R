@@ -1,14 +1,15 @@
 #Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validaiton
-validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noFolds=10){
+validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noFolds=10){
   
   #Randomly shuffle the data
-  newData <- newData[sample(nrow(newData)),]
+  testData <- testData[sample(nrow(testData)),]
   
   #Create 10 equally size folds
-  folds <- cut(seq(1,nrow(newData)),breaks=noFolds,labels=FALSE)
+  folds <- cut(seq(1,nrow(testData)),breaks=noFolds,labels=FALSE)
   
   #Identify variables to be tested
-  items <- mmMatrix[ which(mmMatrix[,3]=='R'), "measurement" ]
+  uniqueTarget <- unique(smMatrix[,2])
+  items <- mmMatrix[mmMatrix[, "latent"] == uniqueTarget,2]
   
   # Initialize matrices for prediction metrics
   # Initialize RMSE holders
@@ -26,22 +27,24 @@ validatePredict <- function(newData, smMatrix, mmMatrix, maxIt=300, stopCriterio
   for(i in 1:noFolds){
     #Segment your data by fold using the which() function 
     testIndexes <- which(folds==i,arr.ind=TRUE)
-    testData <- newData[testIndexes, ]
-    trainData <- newData[-testIndexes, ]
+    testingData <- testData[testIndexes, ]
+    trainingData <- testData[-testIndexes, ]
     
     #PLS model
-    testHolder <- PLSpredict(trainData,smMatrix, mmMatrix, maxIt, stopCriterion, testData)
+    testHolder <- PLSpredict(trainingData, testingData ,smMatrix, mmMatrix, maxIt, stopCriterion)
     
     #Iterate over no of residuals columns
     for(j in 1:ncol(testHolder$residuals)){
       
-      #Calculate RMSE
+      #Calculate SMSE
       predSSE[i,j] <- sum(testHolder$residuals[,j]^2) 
       
-      #Calculate MAPE
-      predSAPE[i,j] <- sum((abs((testHolder$newData[,j] - testHolder$predictedMeasurements[,j])/testHolder$newData[,j])))
+      #Calculate SAPE
+      predSAPE[i,j] <- sum((abs(testHolder$residuals[,j]/testHolder$testData[,j])))
+      #predSAPE[i,j] <- sum((abs((testHolder$testData[,j] - testHolder$predictedMeasurements[,j])/testHolder$testData[,j])))
+      #predSAPE[i,j] <- sum((abs((testHolder$testData[,j] - testHolder$predictedMeasurements[,j])/mean(testHolder$testData[,j]))))
       
-      #Calculate MAD
+      #Calculate SAD
       predSAD[i,j] <- sum(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])))
     }
   }
