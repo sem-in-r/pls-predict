@@ -3,6 +3,6 @@
 *.Rproj*
 /paper/*
 /data/composite.csv
-/to\ review//*
+/toreview/*
 /PLSpredict/*
 *_next.*
