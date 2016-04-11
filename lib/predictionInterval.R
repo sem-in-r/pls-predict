@@ -17,9 +17,13 @@ predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, max
   tempTotal <- as.data.frame(matrix(ncol=0, nrow=nrow(trainData)))
   
   #Identify target variables
+  #uniqueTarget <- unique(smMatrix[,2])
+  #items <- mmMatrix[mmMatrix[, "latent"] == uniqueTarget,2]
   uniqueTarget <- unique(smMatrix[,2])
-  items <- mmMatrix[mmMatrix[, "latent"] == uniqueTarget,2]
-  # items <- mmMatrix[ which(mmMatrix[,3]=='R'), "measurement" ]
+  items <- NULL
+  for (i in 1:length(uniqueTarget)){
+    items <- c(items, mmMatrix[mmMatrix[, "latent"] == uniqueTarget[i],"measurement"])
+  }
   
   #Bootstrap
   for (i in 1:noBoots) { 
