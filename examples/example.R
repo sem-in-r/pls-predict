@@ -39,7 +39,7 @@ plsModel<-simplePLS(Anime,smMatrix,mmMatrix,300,7)
 predTrain <- PLSpredict(Anime, Anime, smMatrix, mmMatrix, 300,9)
 
 #Call predictionInterval
-PIntervals <- predictionInterval(Anime, smMatrix, mmMatrix, PIprobs = 0.9, noBoots = 2000)
+PIntervals <- predictionInterval(Anime, smMatrix, mmMatrix, PIprobs = 0.95, noBoots = 200)
 
 #Predicted compositescores
 predTrain$compositeScores
@@ -56,18 +56,28 @@ pls <- list(predTrain = predTrain,
 
 #Call validatepredict
 
-predictionMetrics <- validatePredict(trainData, smMatrix, mmMatrix,noFolds=10)
-predictionMetrics$totalRMSE
-predictionMetrics$totalMAPE
-predictionMetrics$totalMAD
-
+predictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)
+predictionMetrics$PLSRMSE
+predictionMetrics$LMRMSE
+predictionMetrics$PLSMAPE
+predictionMetrics$LMMAPE
+predictionMetrics$PLSMAD
+predictionMetrics$LMMAD
 
 #Boxplot of AA.o PI, CI, predicted and actual
-average <- data.frame(PIntervals$averageCasePI[1])
-casewise <- data.frame(PIntervals$caseWisePI[1])
-boxplot(average)
-points(predTrain$predictedMeasurements[,1], pch = 18, col = "red", lwd = 1)
-points(predTrain$testData[,1], pch = 3, col = "blue", lwd = 1)
-boxplot(casewise)
-points(predTrain$predictedMeasurements[,1], pch = 18, col = "red", lwd = 1)
-points(predTrain$testData[,1], pch = 3, col = "blue", lwd = 1)
+# Plot of average case PI, actual and predicted values 
+average <- data.frame(PIntervals$averageCasePI[4])
+average <- rbind(average, data.frame(t(predTrain$testData[,4])))
+average <- rbind(average, data.frame(t(predTrain$predictedMeasurements[,4])))
+newdata <- average[order(average[3,])] 
+boxplot(newdata[1:2,])
+points(1:183, newdata[3,], pch = 18, col = "red", lwd = 1)
+points(1:183, newdata[4,], pch = 3, col = "blue", lwd = 1)
+
+casewise <- data.frame(PIntervals$caseWisePI[4])
+casewise <- rbind(casewise, data.frame(t(predTrain$testData[,4])))
+casewise <- rbind(casewise, data.frame(t(predTrain$predictedMeasurements[,4])))
+newdata2 <- casewise[order(casewise[3,])] 
+boxplot(newdata2[1:2,])
+points(1:183, newdata2[3,], pch = 18, col = "red", lwd = 1)
+points(1:183, newdata2[4,], pch = 3, col = "blue", lwd = 1)
