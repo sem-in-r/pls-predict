@@ -5,16 +5,16 @@
 require(TeachingDemos)
 
 #Function for generating average case and casewise Prediction Intervals
-predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData = trainData){
+predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData){
   
   # AVERAGE CASE PREDICTION INTERVAL
   # initialize output prediction dataframe
   # initialize output residual dataframe
   # TODO: get output factors (don't assume they are reflective)
-  tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(trainData)))
-  tempResidual <- as.data.frame(matrix(ncol=0, nrow=nrow(trainData)))
-  tempHolder <- as.data.frame(matrix(ncol=0, nrow=nrow(trainData)))
-  tempTotal <- as.data.frame(matrix(ncol=0, nrow=nrow(trainData)))
+  tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+  tempResidual <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+  tempHolder <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+  tempTotal <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
   
   #Identify target variables
   #uniqueTarget <- unique(smMatrix[,2])
@@ -27,11 +27,11 @@ predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, max
   
   #Bootstrap
   for (i in 1:noBoots) { 
-    boot.index <- sort(sample(1:nrow(testData), replace=TRUE))
-    testData.boot <- testData[boot.index,] 
+    boot.index <- sort(sample(1:nrow(trainData), replace=TRUE))
+    trainData.boot <- trainData[boot.index,] 
     
     #Call PLSpredict
-    tempModel <- PLSpredict(testData.boot,trainData,smMatrix, mmMatrix, maxIt, stopCriterion)
+    tempModel <- PLSpredict(trainData.boot,testData,smMatrix, mmMatrix, maxIt, stopCriterion)
     tempPredict <- cbind(tempPredict,data.frame(tempModel$predictedMeasurements))
     tempResidual <- cbind(tempResidual,data.frame(tempModel$residuals))
   }

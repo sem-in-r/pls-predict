@@ -7,7 +7,7 @@ source("./lib/validatePredict.R")
 #Load Data
 Anime=read.csv("./data/AnimData.csv",header=T)
 set.seed(123)
-index=sample.int(dim(Anime)[1],83,replace=F)
+index=sort(sample.int(dim(Anime)[1],83,replace=F))
 trainData=Anime[-index,]
 testData=Anime[index,]
 
@@ -39,8 +39,8 @@ plsModel<-simplePLS(Anime,smMatrix,mmMatrix,300,7)
 predTrain <- PLSpredict(Anime, Anime, smMatrix, mmMatrix, 300,9)
 
 #Call predictionInterval
-PIntervals <- predictionInterval(Anime, smMatrix, mmMatrix, PIprobs = 0.95, noBoots = 200)
-
+PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.95, noBoots = 200, testData)
+PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData)
 #Predicted compositescores
 predTrain$compositeScores
 

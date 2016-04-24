@@ -3,7 +3,7 @@
 # algorithm and its predictions.
 
 #Function that receives a model and predicts measurements
-PLSpredict <- function(trainData, testData = trainData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
+PLSpredict <- function(trainData, testData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
   
   #Call simplePLS function
   plsModel <- simplePLS(trainData, smMatrix, mmMatrix, maxIt, stopCriterion)
