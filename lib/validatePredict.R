@@ -22,27 +22,33 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
   for (i in 1:length(uniqueSource)){
     sources <- c(sources,mmMatrix[mmMatrix[,"latent"]==uniqueSource[i],"measurement"])
   }
+  lmtarget <- ifelse(length(intersect(uniqueTarget, uniqueSource)) == 0, uniqueTarget,setdiff(uniqueTarget, uniqueSource))  
+  targets <- NULL
+  for (i in 1:length(lmtarget)){
+    targets <- c(targets, mmMatrix[mmMatrix[, "latent"] == lmtarget[i],"measurement"])
+  }
+  
   
   # Initialize matrices for prediction metrics
   # Initialize RMSE holders
-  PLSRMSE <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  PLSSSE <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
-  LMRMSE <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  LMSSSE <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
+  PLSRMSE <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  PLSSSE <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
+  LMRMSE <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  LMSSSE <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
   # Initialize predMAPE
-  PLSSAPE <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
-  PLSMAPE <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  LMMAPE <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  LMSAPE <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
+  PLSSAPE <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
+  PLSMAPE <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  LMMAPE <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  LMSAPE <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
   # Initialize predMAD
-  PLSSAD <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
-  PLSMAD <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  LMMAD <- matrix(,nrow=1,ncol=length(items),byrow =TRUE,dimnames = list(1,items))
-  LMSAD <- matrix(,nrow=noFolds,ncol=length(items),byrow =TRUE,dimnames = list(1:noFolds,items))
+  PLSSAD <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
+  PLSMAD <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  LMMAD <- matrix(,nrow=1,ncol=length(targets),byrow =TRUE,dimnames = list(1,targets))
+  LMSAD <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
   
   # Extract the target and non-target variables for Linear Model
   independentMatrix <- testData[,sources]
-  dependentMatrix <- testData[,items]
+  dependentMatrix <- testData[,targets]
   
   #Perform 10 fold cross validation
   for(i in 1:noFolds){
@@ -58,39 +64,43 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
     #PLS model
     testHolder <- PLSpredict(trainingData, testingData ,smMatrix, mmMatrix, maxIt, stopCriterion)
     
+    #Initialize PLS residuals and actuals holder matrices
+    PLSactuals <- testHolder$testData[,targets]
+    PLSresiduals <- testHolder$residuals[,targets]
+    
     #Initialize lm residuals and actuals holder matrices
-    lmprediction <- matrix(,nrow=nrow(depTestData),ncol=length(items),byrow =TRUE,dimnames = list(1:nrow(depTestData),items))
-    lmresidual <- matrix(,nrow=nrow(depTestData),ncol=length(items),byrow =TRUE,dimnames = list(1:nrow(depTestData),items))
-    lmactual <- matrix(,nrow=nrow(depTestData),ncol=length(items),byrow =TRUE,dimnames = list(1:nrow(depTestData),items))
+    lmprediction <- matrix(,nrow=nrow(depTestData),ncol=length(targets),byrow =TRUE,dimnames = list(1:nrow(depTestData),targets))
+    lmresidual <- matrix(,nrow=nrow(depTestData),ncol=length(targets),byrow =TRUE,dimnames = list(1:nrow(depTestData),targets))
+    lmactual <- matrix(,nrow=nrow(depTestData),ncol=length(targets),byrow =TRUE,dimnames = list(1:nrow(depTestData),targets))
     
     #LM Models
-    for(l in 1:length(items)){
+    for(l in 1:length(targets)){
       trainLM <- lm(depTrainData[,l] ~ ., indepTrainData)
       lmprediction[,l] <- predict(trainLM, newdata = indepTestData)
       lmresidual[,l] <- lmprediction[,l] - depTestData[, l]
       lmactual[,l] <- depTestData[, l]
     }
     
-    #Iterate over no of residuals columns
-    for(j in 1:ncol(testHolder$residuals)){
+    #Iterate over no of targets
+    for(j in 1:length(targets)){
       
       #Calculate SMSE
-      PLSSSE[i,j] <- sum(testHolder$residuals[,j]^2) 
+      PLSSSE[i,j] <- sum(PLSresiduals[,j]^2) 
       LMSSSE[i,j] <- sum(lmresidual[,j]^2)
       #Calculate SAPE
-      PLSSAPE[i,j] <- sum((abs(testHolder$residuals[,j]/testHolder$testData[,j])))
+      PLSSAPE[i,j] <- sum((abs(PLSresiduals[,j]/PLSactuals[,j])))
       #PLSSAPE[i,j] <- sum((abs((mean(testHolder$testData[,j]) - testHolder$predictedMeasurements[,j])/mean(testHolder$testData[,j]))))
       #PLSSAPE[i,j] <- sum((abs((testHolder$residuals[,j])/mean(testHolder$testData[,j]))))
       LMSAPE[i,j] <- sum((abs(lmresidual[,j]/lmactual[,j])))
       #Calculate SAD
-      PLSSAD[i,j] <- sum(abs(testHolder$residuals[,j] - mean(testHolder$residuals[,j])))
+      PLSSAD[i,j] <- sum(abs(PLSresiduals[,j] - mean(PLSresiduals[,j])))
       LMSAD[i,j] <- sum(abs(lmresidual[,j] - mean(lmresidual[,j])))
     }
   }
   
   #Final calculations 
-  denom <- noFolds * nrow(testHolder$residuals)
-  for (k in 1:length(items)) {
+  denom <- noFolds * nrow(testingData)
+  for (k in 1:length(targets)) {
     LMRMSE[,k] <- sqrt((sum(LMSSSE[,k]))/denom)
     PLSRMSE[,k] <- sqrt((sum(PLSSSE[,k]))/denom)
     LMMAPE[,k] <- 100*(sum(LMSAPE[,k])/denom)
