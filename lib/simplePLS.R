@@ -1,10 +1,6 @@
-#simplePLS Library
-#Author: Juan Manuel Velasquez Estrada
-#Creation: March 2015
+#simplePLS 
 #Description: This library contains the functions utilized to run the PLS-PM 
-# algorithm and its predictions.
-
-require(TeachingDemos)
+# algorithm.
 
 #Function that estimates the PLS-PM Model
 simplePLS <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7){

@@ -1,10 +1,13 @@
 #Load our Algorithm
 source("./lib/simplePLS.R")
+source("./lib/PLSpredict.R")
+source("./lib/predictionInterval.R")
+source("./lib/validatePredict.R")
 
 #Load Data
 Anime=read.csv("./data/AnimData.csv",header=T)
 set.seed(123)
-index=sample.int(dim(Anime)[1],83,replace=F)
+index=sort(sample.int(dim(Anime)[1],83,replace=F))
 trainData=Anime[-index,]
 testData=Anime[index,]
 
@@ -32,9 +35,12 @@ mmMatrix <- matrix(c("PerceivedVisualComplexity","VX.0","F",
 #Call PLS-PM Function
 plsModel<-simplePLS(Anime,smMatrix,mmMatrix,300,7)
 
-#Call Prediction Function
-predTrain <- PLSpredict(trainData, smMatrix, mmMatrix, 300,9, testData)
+#Call Prediction Function 
+predTrain <- PLSpredict(Anime, Anime, smMatrix, mmMatrix, 300,9)
 
+#Call predictionInterval
+PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.95, noBoots = 200, testData)
+PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData)
 #Predicted compositescores
 predTrain$compositeScores
 
@@ -51,6 +57,27 @@ pls <- list(predTrain = predTrain,
 #Call validatepredict
 
 predictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)
-predictionMetrics$totalRMSE
-predictionMetrics$totalMAPE
-predictionMetrics$totalMAD
+predictionMetrics$PLSRMSE
+predictionMetrics$LMRMSE
+predictionMetrics$PLSMAPE
+predictionMetrics$LMMAPE
+predictionMetrics$PLSMAD
+predictionMetrics$LMMAD
+
+#Boxplot of AA.o PI, CI, predicted and actual
+# Plot of average case PI, actual and predicted values 
+average <- data.frame(PIntervals$averageCasePI[4])
+average <- rbind(average, data.frame(t(predTrain$testData[,4])))
+average <- rbind(average, data.frame(t(predTrain$predictedMeasurements[,4])))
+newdata <- average[order(average[3,])] 
+boxplot(newdata[1:2,])
+points(1:183, newdata[3,], pch = 18, col = "red", lwd = 1)
+points(1:183, newdata[4,], pch = 3, col = "blue", lwd = 1)
+
+casewise <- data.frame(PIntervals$caseWisePI[4])
+casewise <- rbind(casewise, data.frame(t(predTrain$testData[,4])))
+casewise <- rbind(casewise, data.frame(t(predTrain$predictedMeasurements[,4])))
+newdata2 <- casewise[order(casewise[3,])] 
+boxplot(newdata2[1:2,])
+points(1:183, newdata2[3,], pch = 18, col = "red", lwd = 1)
+points(1:183, newdata2[4,], pch = 3, col = "blue", lwd = 1)

@@ -1,8 +1,12 @@
+#PLSpredict
+#Description: This library contains the functions utilized to run the PLS-PM 
+# algorithm and its predictions.
+
 #Function that receives a model and predicts measurements
-PLSpredict <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7, newData = obsData){
+PLSpredict <- function(trainData, testData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7){
   
   #Call simplePLS function
-  plsModel <- simplePLS(obsData, smMatrix, mmMatrix, maxIt, stopCriterion)
+  plsModel <- simplePLS(trainData, smMatrix, mmMatrix, maxIt, stopCriterion)
   
   #Get results from model
   smMatrix <- plsModel$smMatrix
@@ -38,7 +42,7 @@ PLSpredict <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7, n
   }
   
   #Extract Measurements needed for Predictions
-  normData <- newData[,pMeasurements]
+  normData <- testData[,pMeasurements]
   
   #Normalize data
   for (i in pMeasurements)
@@ -80,10 +84,10 @@ PLSpredict <- function(obsData,smMatrix, mmMatrix, maxIt=300, stopCriterion=7, n
   }  
   
   #Calculating the residuals
-  residuals <- newData[,eMeasurements] - predictedMeasurements[,eMeasurements]
+  residuals <- testData[,eMeasurements] - predictedMeasurements[,eMeasurements]
   
   #Prepare return Object
-  predictResults <- list(newData = newData[,eMeasurements],
+  predictResults <- list(testData = testData[,eMeasurements],
                          predictedMeasurements = predictedMeasurements[,eMeasurements],
                          residuals = residuals,
                          compositeScores = fscores)
