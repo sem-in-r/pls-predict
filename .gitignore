@@ -1,6 +1,7 @@
 .Rhistory
 *.RData
 *.Rproj*
+.Rproj.user
 /paper/*
 /data/composite.csv
 /toreview/*

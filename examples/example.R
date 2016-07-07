@@ -38,9 +38,9 @@ plsModel<-simplePLS(Anime,smMatrix,mmMatrix,300,7)
 #Call Prediction Function 
 predTrain <- PLSpredict(Anime, Anime, smMatrix, mmMatrix, 300,9)
 
-#Call predictionInterval
-PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.95, noBoots = 200, testData)
-PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData)
+#Call predictionInterval (shortened number of bootstraps for demonstration)
+PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.95, maxIt=200, stopCriterion=7, noBoots=500, testData)
+
 #Predicted compositescores
 predTrain$compositeScores
 
