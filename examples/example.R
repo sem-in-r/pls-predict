@@ -51,18 +51,8 @@ PIntervals <- predictionInterval(trainData, smMatrix, mmMatrix, PIprobs = 0.95, 
 #Predicted compositescores
 predTrain$compositeScores
 
-#Get Residuals
-residualsTraining <- predTrain$residuals
-residualsTest <- predTest$residuals
-
-#Prepare Object
-pls <- list(predTrain = predTrain,
-            predTest = predTest,
-            residualsTraining = residualsTraining,
-            residualsTest= residualsTest)
 
 #Call validatepredict
-
 predictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)
 predictionMetrics$PLSRMSE
 predictionMetrics$LMRMSE
