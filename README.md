@@ -15,6 +15,7 @@ First the devtools package must be installed and required in the R environment u
 install.packages("devtools"), require(devtools)
 ```
 After succesful installation of the devtools package, the install_github() function must be called to install PLSpredict directly from our Github repository:  
+We currently do not have a fully implemented package, so please clone or pull the Github Repo.
 ```
 install_github("TBC")
 ```  
@@ -70,11 +71,11 @@ We have defined the structural model as consisting of 2 exogenous antecedent fac
 
 In R our model is described by creating a 2 by 2 matrix and initializing this as matrix object smMatrix. The source column identifies the antecedent factor and the target column the outcome factor. This matrix is limited to 2 column width, but can have any number of antecedent and outcome factor combinations to accurately describe the proposed structural model. Indeed, one can even model interactions and moderations in this way.
 
-Please note that only alphanumeric characters to be used in column names. Ie. no `/` or `*` etc.
+Please note that only alphanumeric characters to be used in column names / latent variable names / measurement item names. Ie. no `/` or `*` etc.
 
 ```
 #Create the Matrix of the Structural Model
-smMatrix <- matrix(c("Perceived Visual Complexity", "ApproachAvoidance",
+smMatrix <- matrix(c("PerceivedVisualComplexity", "ApproachAvoidance",
                      "Arousal","ApproachAvoidance"),nrow=2,ncol=2,byrow =TRUE,
                    dimnames = list(1:2,c("source","target")))
 ```
@@ -86,11 +87,11 @@ In R our model is described by creating a 13 by 3 matrix and initializing it as 
 
 ```
 #Create the Matrix of the Measurement Model
-mmMatrix <- matrix(c("Perceived Visual Complexity","VX.0","F",
-                     "Perceived Visual Complexity","VX.1","F",
-                     "Perceived Visual Complexity","VX.2","F",
-                     "Perceived Visual Complexity","VX.3","F",
-                     "Perceived Visual Complexity","VX.4","F",
+mmMatrix <- matrix(c("PerceivedVisualComplexity","VX.0","F",
+                     "PerceivedVisualComplexity","VX.1","F",
+                     "PerceivedVisualComplexity","VX.2","F",
+                     "PerceivedVisualComplexity","VX.3","F",
+                     "PerceivedVisualComplexity","VX.4","F",
                      "Arousal","Aro1","F",
                      "Arousal","Aro2","F",
                      "Arousal","Aro3","F",
@@ -141,6 +142,40 @@ PIntervals is now a list object containing 2 dataframes. The average case and ca
 ppredictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)  
 ```  
 The variable predictionMetrics is now a list of 6 dataframes, being RMSE, MAPE and MAD calculated using PLSpredict a Linear Model (benchmark ) for each target item.
+
+### Visualization of the Prediction Intervals
+
+####Create Holders & assign PI data
+aveKC1 <- PIntervals$averageCasePI[[1]]
+aveKC2 <- PIntervals$averageCasePI[[2]]
+aveKC3 <- PIntervals$averageCasePI[[3]]
+casewiseKC1 <- PIntervals$caseWisePI[[1]]
+casewiseKC2 <- PIntervals$caseWisePI[[2]]
+casewiseKC3 <- PIntervals$caseWisePI[[3]]
+
+####Allocate and sort data - first by actual data and then by predicted data
+dataholderKC1 <- cbind(t(aveKC1),predTrain$predictedMeasurements[,1], predTrain$testData[,1],t(casewiseKC1) )
+dataholderKC2 <- cbind(t(aveKC2),predTrain$predictedMeasurements[,2], predTrain$testData[,2],t(casewiseKC2) )
+dataholderKC3 <- cbind(t(aveKC3),predTrain$predictedMeasurements[,3], predTrain$testData[,3],t(casewiseKC3) )
+KC1sorted <- dataholderKC1[order(dataholderKC1[,4], dataholderKC1[,3]) , ]
+KC2sorted <- dataholderKC2[order(dataholderKC2[,4], dataholderKC2[,3]) , ]
+KC3sorted <- dataholderKC3[order(dataholderKC3[,4], dataholderKC3[,3]) , ]
+
+##Plot results function
+###Item Y11 residuals
+plot(predTrain$testData[,1], predTrain$residuals[,1],ylim = c(-4,4), ylab = "Residuals", xlab = "Actuals", main = "PLS Residuals for item Y11",pch = 16, col = rgb(0,0,0,0.2) )
+abline(h = 0)
+abline(h = predictionMetrics$PLSRMSE[,1], lty = 2)
+abline(h = -predictionMetrics$PLSRMSE[,1], lty = 2)
+
+### Item Y11 PLS Prediction Intervals
+plot(NULL, xlim = c(1,nrow(KC1sorted)), ylim = c(0,9), ylab = "Ranges", xlab = "Cases", type = "n", main = "PLS Prediction Intervals for item Y11")
+segments(c(1:83),KC1sorted[,5],c(1:83),KC1sorted[,6], col = 'lightgrey', lwd = 3)
+segments(c(1:83),KC1sorted[,1],c(1:83),KC1sorted[,2], col = 'darkgrey', lwd = 3)
+points(x = c(1:83), y = KC1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
+points(x = c(1:83), y = KC1sorted[,3],pch = 20, cex = 0.8)
+
+
 
 ## Citation  
 Shmueli, G., Ray, S., Estrada, J. M., & Chatla, S. (n.d.). The Elephant in the Room: Evaluating the Predictive Performance of Partial Least Squares (PLS) Path Models (2015). SSRN Electronic Journal SSRN Journal.  
