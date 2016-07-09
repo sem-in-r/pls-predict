@@ -139,10 +139,11 @@ PIntervals is now a list object containing 2 dataframes. The average case and ca
 
 ### Calculation of Prediction Metrics  
 ```  
-ppredictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)  
+predictionMetrics <- validatePredict(Anime, smMatrix, mmMatrix,noFolds=10)  
 ```  
 The variable predictionMetrics is now a list of 6 dataframes, being RMSE, MAPE and MAD calculated using PLSpredict a Linear Model (benchmark ) for each target item.
 
+```
 ### Visualization of the Prediction Intervals
 
 ####Create Holders & assign PI data
@@ -174,7 +175,7 @@ segments(c(1:83),KC1sorted[,5],c(1:83),KC1sorted[,6], col = 'lightgrey', lwd = 3
 segments(c(1:83),KC1sorted[,1],c(1:83),KC1sorted[,2], col = 'darkgrey', lwd = 3)
 points(x = c(1:83), y = KC1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
 points(x = c(1:83), y = KC1sorted[,3],pch = 20, cex = 0.8)
-
+```
 
 
 ## Citation  
