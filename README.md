@@ -9,16 +9,7 @@ This readme serves to explain the working of the PLSpredict package and to provi
 The popularity of PLS chiefly derives from the its non-parametric estimation of complex models - not requiring the onerous distributional and other constraints of traditional parametric methods.
 
 ## Installation and Use  
-The simplePLS package can be downloaded directly from Github using the Devtools package developed by Hadley Wickham.  
-First the devtools package must be installed and required in the R environment using the following R code:  
-```
-install.packages("devtools"), require(devtools)
-```
-After succesful installation of the devtools package, the install_github() function must be called to install PLSpredict directly from our Github repository:  
-We currently do not have a fully implemented package, so please clone or pull the Github Repo.
-```
-install_github("TBC")
-```  
+Currently, this package has to be downloaded (or cloned) directly from Github. We have not yet bundled the R Package. We will do so shortly. 
 
 ## Features
 ### simplePLS()  
