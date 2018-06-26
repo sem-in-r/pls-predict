@@ -3,29 +3,34 @@
 # and subsequent calculation of prediction metrics (RMSE, MAPE, MAD) for PLS & LM
 
 #Function for Generating and Evaluating Out-of-sample predictions using 10-fold cross-validation
-validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriterion=7,noFolds=10){
+validatePredict <- function(model, technique = predict_DA, noFolds=10){
+  
+  # Collect the objects from the model
+  fullData <- model$data
+  smMatrix <- model$smMatrix
+  mmMatrix <- model$mmMatrix
   
   #Randomly shuffle the data
-  testData <- testData[sample(nrow(testData)),]
+  fullData <- fullData[sample(nrow(fullData)),]
   
   #Create 10 equally size folds
-  folds <- cut(seq(1,nrow(testData)),breaks=noFolds,labels=FALSE)
+  folds <- cut(seq(1,nrow(fullData)),breaks=noFolds,labels=FALSE)
   
   #Identify variables to be tested
   uniqueTarget <- unique(smMatrix[,2])
   items <- NULL
   for (i in 1:length(uniqueTarget)){
-    items <- c(items, mmMatrix[mmMatrix[, "latent"] == uniqueTarget[i],"measurement"])
+    items <- c(items, mmMatrix[mmMatrix[, "construct"] == uniqueTarget[i],"measurement"])
   }
   uniqueSource <- unique(smMatrix[,1])
   sources <- NULL
   for (i in 1:length(uniqueSource)){
-    sources <- c(sources,mmMatrix[mmMatrix[,"latent"]==uniqueSource[i],"measurement"])
+    sources <- c(sources,mmMatrix[mmMatrix[,"construct"]==uniqueSource[i],"measurement"])
   }
   lmtarget <- ifelse(length(intersect(uniqueTarget, uniqueSource)) == 0, uniqueTarget,setdiff(uniqueTarget, uniqueSource))  
   targets <- NULL
   for (i in 1:length(lmtarget)){
-    targets <- c(targets, mmMatrix[mmMatrix[, "latent"] == lmtarget[i],"measurement"])
+    targets <- c(targets, mmMatrix[mmMatrix[, "construct"] == lmtarget[i],"measurement"])
   }
   
   
@@ -47,22 +52,27 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
   LMSAD <- matrix(,nrow=noFolds,ncol=length(targets),byrow =TRUE,dimnames = list(1:noFolds,targets))
   
   # Extract the target and non-target variables for Linear Model
-  independentMatrix <- testData[,sources]
-  dependentMatrix <- testData[,targets]
+  independentMatrix <- fullData[,sources]
+  dependentMatrix <- fullData[,targets]
   
   #Perform 10 fold cross validation
   for(i in 1:noFolds){
     #Segment your data by fold using the which() function 
     testIndexes <- which(folds==i,arr.ind=TRUE)
-    testingData <- testData[testIndexes, ]
-    trainingData <- testData[-testIndexes, ]
+    testingData <- fullData[testIndexes, ]
+    trainingData <- fullData[-testIndexes, ]
     indepTestData <- independentMatrix[testIndexes, ]
     indepTrainData <- independentMatrix[-testIndexes, ]
     depTestData <- dependentMatrix[testIndexes, ]
     depTrainData <- dependentMatrix[-testIndexes, ]
     
-    #PLS model
-    testHolder <- PLSpredict(trainingData, testingData ,smMatrix, mmMatrix, maxIt, stopCriterion)
+    # Train PLS model
+    train_pls_model <- estimate_pls(data = trainingData,
+                                    measurement_model = mmMatrix,
+                                    structural_model = smMatrix)
+    testHolder <- PLSpredict(train_pls_model,
+                             technique = technique,
+                             testData = testingData)
     
     #Initialize PLS residuals and actuals holder matrices
     PLSactuals <- testHolder$testData[,targets]
