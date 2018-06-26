@@ -48,7 +48,7 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
   
   # Extract the target and non-target variables for Linear Model
   independentMatrix <- testData[,sources]
-  dependentMatrix <- testData[,targets]
+  dependentMatrix <- as.matrix(testData[,targets])
   
   #Perform 10 fold cross validation
   for(i in 1:noFolds){
@@ -58,15 +58,19 @@ validatePredict <- function(testData, smMatrix, mmMatrix, maxIt=300, stopCriteri
     trainingData <- testData[-testIndexes, ]
     indepTestData <- independentMatrix[testIndexes, ]
     indepTrainData <- independentMatrix[-testIndexes, ]
-    depTestData <- dependentMatrix[testIndexes, ]
-    depTrainData <- dependentMatrix[-testIndexes, ]
+    depTestData <- as.matrix(dependentMatrix[testIndexes, ])
+    depTrainData <- as.matrix(dependentMatrix[-testIndexes, ])
     
     #PLS model
     testHolder <- PLSpredict(trainingData, testingData ,smMatrix, mmMatrix, maxIt, stopCriterion)
     
     #Initialize PLS residuals and actuals holder matrices
-    PLSactuals <- testHolder$testData[,targets]
-    PLSresiduals <- testHolder$residuals[,targets]
+    temptest <- as.matrix(testHolder$testData)
+    tempresiduals <- as.matrix(testHolder$residuals)
+    colnames(temptest) <- targets
+    colnames(tempresiduals) <- targets
+    PLSactuals <- as.matrix(temptest[,targets])
+    PLSresiduals <- as.matrix(tempresiduals[,targets])
     
     #Initialize lm residuals and actuals holder matrices
     lmprediction <- matrix(,nrow=nrow(depTestData),ncol=length(targets),byrow =TRUE,dimnames = list(1:nrow(depTestData),targets))
