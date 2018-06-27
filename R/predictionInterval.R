@@ -37,9 +37,9 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
     trainData.boot <- trainData[boot.index,] 
     
     #Call PLSpredict
-    trainModel <- estimate_pls(trainData.boot,
+    utils::capture.output(trainModel <- estimate_pls(trainData.boot,
                                measurement_model = mmMatrix,
-                               structural_model = smMatrix)
+                               structural_model = smMatrix))
     tempModel <- PLSpredict(model = trainModel,
                             testData = testData,
                             technique = technique)
@@ -87,6 +87,8 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
   for (n in 1:length(items)) {
     casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==items[n]] , 1, emp.hpd, conf = PIprobs))
   }
+  
+  names(casewiseHolder) <- names(quantHolder) <- colnames(tempModel$predicted_Measurements)
   
   PIresults <- list(averageCasePI = quantHolder, 
                     caseWisePI = casewiseHolder)
