@@ -3,7 +3,6 @@ context("PLSpredict correctly calculates the PLS and LM metrics DA technique\n")
 # Test cases
 ## DA Approach
 set.seed(12345)
-library(seminr)
 # seminr syntax for creating measurement model
 mobi_mm <- constructs(
   composite("Image",        multi_items("IMAG", 1:5), weights = mode_A),
@@ -21,7 +20,7 @@ mobi_sm <- relationships(
 
 # Load data, assemble model, and estimate using semPLS
 mobi <- mobi
-seminr_model <- estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
+seminr_model <- seminr::estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
 metrics_DA <- validatePredict(seminr_model,
                               technique = predict_DA,
                               noFolds = 10)

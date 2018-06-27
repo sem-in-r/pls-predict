@@ -3,7 +3,6 @@ context("PLSpredict correctly calculates the prediction intervals for DA techniq
 # Test cases
 ## DA Approach
 set.seed(4234)
-library(seminr)
 # seminr syntax for creating measurement model
 mobi_mm <- constructs(
   composite("Image",        multi_items("IMAG", 1:5), weights = mode_A),
@@ -22,7 +21,7 @@ mobi_sm <- relationships(
 # Load data, assemble model, and estimate using semPLS
 trainData <- mobi[1:200,]
 testData <- mobi[201:250,]
-mobi_train <- estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
+mobi_train <- seminr::estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
 prediction_intervals_DA <- predictionInterval(model = mobi_train,
                                               testData = testData,
                                               technique = predict_DA,

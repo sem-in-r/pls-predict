@@ -4,7 +4,7 @@
 \alias{PLSpredict}
 \title{PLSpredict performs predictions on SEMinR PLS models}
 \usage{
-PLSpredict(model = seminr_model, testData = test_set, technique = predict_DA)
+PLSpredict(model, testData, technique)
 }
 \arguments{
 \item{model}{A SEMinR model that has been trained on the training data}
@@ -21,10 +21,10 @@ Direct Antecedents (DA) \code{predict_DA}}
 This function performs construct and item level predictions
 }
 \examples{
+library(seminr)
 data(mobi)
 trainData <- mobi[1:200,]
 testData <- mobi[201:250,]
-library(seminr)
 
 # seminr syntax for creating measurement model
 mobi_mm <- constructs(
@@ -40,6 +40,6 @@ mobi_sm <- relationships(
 )
 
 mobi_train <- estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm)
-predictions <- PLSpredict(mobi_pls, testData)
+predictions <- PLSpredict(mobi_train, testData)
 
 }

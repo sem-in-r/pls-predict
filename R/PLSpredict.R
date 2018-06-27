@@ -13,13 +13,13 @@
 #'
 #' @usage
 #'
-#' PLSpredict(model = seminr_model, testData = test_set, technique = predict_DA)
+#' PLSpredict(model, testData, technique)
 #'
 #' @examples
+#' library(seminr)
 #' data(mobi)
 #' trainData <- mobi[1:200,]
 #' testData <- mobi[201:250,]
-#' library(seminr)
 #'
 #' # seminr syntax for creating measurement model
 #' mobi_mm <- constructs(
@@ -35,14 +35,10 @@
 #' )
 #'
 #' mobi_train <- estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm)
-#' predictions <- PLSpredict(mobi_pls, testData)
+#' predictions <- PLSpredict(mobi_train, testData)
 #'
 #' @export
 PLSpredict <- function(model, testData, technique = predict_DA){
-  library(seminr)
-  #Call simplePLS function
-  #plsModel <- estimate_pls(trainData, mmMatrix, interactions = NULL, smMatrix)
-
   #Get results from training model
   smMatrix <- model$smMatrix
   mmMatrix <- model$mmMatrix

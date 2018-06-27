@@ -17,13 +17,13 @@
 #'
 #' @usage
 #'
-#' predictionInterval(model = seminr_model, testData = testdata, technique = predict_DA)
+#' predictionInterval(model, testData, technique, PIprobs, noBoots)
 #'
 #' @examples
-#' data(mobi)
-#' traindata <- mobi[1:200,]
-#' testData <- mobi[201:250,]
 #' library(seminr)
+#' data(mobi)
+#' trainData <- mobi[1:200,]
+#' testData <- mobi[201:250,]
 #'
 #' # seminr syntax for creating measurement model
 #' mobi_mm <- constructs(
@@ -39,7 +39,7 @@
 #' )
 #'
 #' mobi_train <- estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm)
-#' prediction_intervals <- PInterval(mobi_train, testData)
+#' prediction_intervals <- predictionInterval(mobi_train, testData)
 #'
 #' @export
 predictionInterval <- function(model, testData, technique = predict_DA, PIprobs = 0.9,noBoots=200){
@@ -74,7 +74,7 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
     trainData.boot <- trainData[boot.index,]
 
     #Call PLSpredict
-    utils::capture.output(trainModel <- estimate_pls(trainData.boot,
+    utils::capture.output(trainModel <- seminr::estimate_pls(trainData.boot,
                                measurement_model = mmMatrix,
                                structural_model = smMatrix))
     tempModel <- PLSpredict(model = trainModel,
@@ -89,9 +89,10 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
   # Initialize Average Case PI holder
   quantHolder <- list(NULL)
 
+  func <- TeachingDemos::emp.hpd
   # Calculate Quantiles HPD
   for (n in 1:length(items)) {
-    quantHolder[[n]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==items[n]] , 1, emp.hpd, conf = PIprobs))
+    quantHolder[[n]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==items[n]] , 1, func, conf = PIprobs))
   }
   ##quantHolder <- matrix(as.matrix(quantHolder), ncol = ncol(quantHolder), dimnames = NULL)
 
@@ -122,7 +123,7 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
 
   # and calculate quantiles HPD on
   for (n in 1:length(items)) {
-    casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==items[n]] , 1, emp.hpd, conf = PIprobs))
+    casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==items[n]] , 1, func, conf = PIprobs))
   }
 
   names(casewiseHolder) <- names(quantHolder) <- colnames(tempModel$predicted_Measurements)

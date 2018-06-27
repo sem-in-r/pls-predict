@@ -14,11 +14,11 @@
 #'
 #' @usage
 #'
-#' validatePredict(model = seminr_model, technique = predict_DA, noFolds = 10)
+#' validatePredict(model, technique, noFolds)
 #'
 #' @examples
-#' data(mobi)
 #' library(seminr)
+#' data(mobi)
 #'
 #' # seminr syntax for creating measurement model
 #' mobi_mm <- constructs(
@@ -93,7 +93,7 @@ validatePredict <- function(model, technique = predict_DA, noFolds=10){
     trainingData <- fullData[-testIndexes, ]
 
     # Train PLS model
-    utils::capture.output(train_pls_model <- estimate_pls(data = trainingData,
+    utils::capture.output(train_pls_model <- seminr::estimate_pls(data = trainingData,
                                     measurement_model = mmMatrix,
                                     structural_model = smMatrix))
     testHolder <- PLSpredict(train_pls_model,

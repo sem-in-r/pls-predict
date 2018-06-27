@@ -4,7 +4,7 @@
 \alias{validatePredict}
 \title{PLSpredict performs predictions on SEMinR PLS models}
 \usage{
-validatePredict(model = seminr_model, technique = predict_DA, noFolds = 10)
+validatePredict(model, technique, noFolds)
 }
 \arguments{
 \item{model}{A SEMinR model that has been trained on the training data}
@@ -22,8 +22,8 @@ This function performs k-fold cross validation and generates RMSE, MAPE and MAD 
 LM benchmark.
 }
 \examples{
-data(mobi)
 library(seminr)
+data(mobi)
 
 # seminr syntax for creating measurement model
 mobi_mm <- constructs(

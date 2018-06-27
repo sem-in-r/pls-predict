@@ -1,7 +1,6 @@
 context("PLSpredict correctly generates predictions\n")
 
 # Test cases
-library(seminr)
 
 # Creating measurement model
 mobi_mm <- constructs(
@@ -25,7 +24,7 @@ mobi_sm <- relationships(
 )
 
 # Estimating the full model
-mobi_pls <- estimate_pls(data = mobi,
+mobi_pls <- seminr::estimate_pls(data = mobi,
                          measurement_model = mobi_mm,
                          structural_model = mobi_sm)
 
@@ -36,7 +35,7 @@ testData=mobi[201:250,]
 
 
 # Train the predictive model
-mobi_pls_train <- estimate_pls(data = trainData,
+mobi_pls_train <- seminr::estimate_pls(data = trainData,
                                measurement_model = mobi_mm,
                                structural_model = mobi_sm)
 
