@@ -5,7 +5,12 @@
 require(TeachingDemos)
 
 #Function for generating average case and casewise Prediction Intervals
-predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, maxIt=300, stopCriterion=7,noBoots=200, testData){
+predictionInterval <- function(model, testData, technique = predict_DA, PIprobs = 0.9,noBoots=200){
+  
+  # Collect model specs
+  trainData <- model$data
+  smMatrix <- model$smMatrix
+  mmMatrix <- model$mmMatrix
   
   # AVERAGE CASE PREDICTION INTERVAL
   # initialize output prediction dataframe
@@ -22,17 +27,23 @@ predictionInterval <- function(trainData, smMatrix, mmMatrix, PIprobs = 0.9, max
   uniqueTarget <- unique(smMatrix[,2])
   items <- NULL
   for (i in 1:length(uniqueTarget)){
-    items <- c(items, mmMatrix[mmMatrix[, "latent"] == uniqueTarget[i],"measurement"])
+    items <- c(items, mmMatrix[mmMatrix[, "construct"] == uniqueTarget[i],"measurement"])
   }
   
   #Bootstrap
+  #TODO: parallelize bootstrap
   for (i in 1:noBoots) { 
     boot.index <- sort(sample(1:nrow(trainData), replace=TRUE))
     trainData.boot <- trainData[boot.index,] 
     
     #Call PLSpredict
-    tempModel <- PLSpredict(trainData.boot,testData,smMatrix, mmMatrix, maxIt, stopCriterion)
-    tempPredict <- cbind(tempPredict,data.frame(tempModel$predictedMeasurements))
+    trainModel <- estimate_pls(trainData.boot,
+                               measurement_model = mmMatrix,
+                               structural_model = smMatrix)
+    tempModel <- PLSpredict(model = trainModel,
+                            testData = testData,
+                            technique = technique)
+    tempPredict <- cbind(tempPredict,data.frame(tempModel$predicted_Measurements))
     tempResidual <- cbind(tempResidual,data.frame(tempModel$residuals))
   }
   

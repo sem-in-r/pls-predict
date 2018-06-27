@@ -7,3 +7,6 @@
 /toreview/*
 /PLSpredict/*
 *_next.*
+.DS_Store
+.dropbox
+Icon?
