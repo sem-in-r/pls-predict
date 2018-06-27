@@ -1,0 +1,13 @@
+language: r
+
+os: 
+ - linux
+ - osx
+
+cache: packages
+
+#safelist
+branches:
+  only:
+  - develop
+  - master

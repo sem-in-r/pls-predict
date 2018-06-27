@@ -1,14 +1,5 @@
-#Load our Algorithm
-
-# Check if SEMinR is installed and install if not
-if("seminr" %in% rownames(installed.packages()) == FALSE) {install.packages("seminr")}
-
 # Load SEMinR library
 library(seminr)
-#source("./lib/simplePLS.R")
-source("./lib/PLSpredict.R")
-source("./lib/predictionInterval.R")
-source("./lib/validatePredict.R")
 
 # Creating measurement model
 mobi_mm <- constructs(
@@ -43,7 +34,7 @@ trainData=mobi[-index,]
 testData=mobi[index,]
 
 
-# Train the predictive model 
+# Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
                                measurement_model = mobi_mm,
                                structural_model = mobi_sm)
