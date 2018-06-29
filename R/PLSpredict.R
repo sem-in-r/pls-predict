@@ -50,47 +50,18 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   sdData <- model$sdData
   path_coef<- model$path_coef
 
-  #Create container for Exogenous Variables
-  exVariables = NULL
-
-  #Create container for Endogenous Variables
-  enVariables = NULL
-
-  #Identify Exogenous and Endogenous Variables
-  exVariables <- unique(smMatrix[,1])
-  pMeasurements <- NULL
-  for (i in 1:length(exVariables)){
-    pMeasurements <- c(pMeasurements,mmMatrix[mmMatrix[,"construct"]==exVariables[i],"measurement"])
-  }
-  enVariables <- unique(smMatrix[,2])
-  resMeasurements <- NULL
-  for (i in 1:length(enVariables)){
-    resMeasurements <- c(resMeasurements, mmMatrix[mmMatrix[, "construct"] == enVariables[i],"measurement"])
-  }
-  enVariables <- setdiff(enVariables,exVariables)
-  eMeasurements <- NULL
-  for (i in 1:length(enVariables)){
-    eMeasurements <- c(eMeasurements, mmMatrix[mmMatrix[, "construct"] == enVariables[i],"measurement"])
-  }
-
   #Extract Measurements needed for Predictions
-  normData <- testData[,pMeasurements]
+  normData <- testData[,mmVariables]
 
   #Normalize data
-  for (i in pMeasurements)
+  #for (i in pMeasurements)
+  for (i in mmVariables)
   {
     normData[,i] <-(normData[,i] - meanData[i])/sdData[i]
   }
 
   #Convert dataset to matrix
   normData<-data.matrix(normData)
-
-   #Add empty columns to normData for the estimated measurements
-  for (i in 1:length(eMeasurements))
-  {
-    normData = cbind(normData, seq(0,0,length.out =nrow(normData)))
-    colnames(normData)[length(colnames(normData))]=eMeasurements[i]
-  }
 
   #Estimate Factor Scores from Outter Path
   fscores <- normData%*%outer_weights
@@ -108,11 +79,11 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   }
 
   #Calculating the residuals
-  residuals <- testData[,resMeasurements] - predictedMeasurements[,resMeasurements]
+  residuals <- testData[,mmVariables] - predictedMeasurements[,mmVariables]
 
   #Prepare return Object
-  predictResults <- list(testData = testData[,resMeasurements],
-                         predicted_Measurements = predictedMeasurements[,resMeasurements],
+  predictResults <- list(testData = testData[,mmVariables],
+                         predicted_Measurements = predictedMeasurements[,mmVariables],
                          residuals = residuals,
                          predicted_CompositeScores = fscores)
 

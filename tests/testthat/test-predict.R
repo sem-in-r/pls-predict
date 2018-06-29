@@ -56,10 +56,10 @@ item_predictions_EA <- mobi_pls_predict_EA$predicted_Measurements
 
 
 ## Output originally created using following lines
-#write.csv(construct_predictions_DA, file = "tests/fixtures/construct_predictions_DA.csv")
-#write.csv(item_predictions_DA, file = "tests/fixtures/items_predictions_DA.csv")
-#write.csv(construct_predictions_EA, file = "tests/fixtures/construct_predictions_EA.csv")
-#write.csv(item_predictions_EA, file = "tests/fixtures/items_predictions_EA.csv")
+# write.csv(construct_predictions_DA, file = "tests/fixtures/construct_predictions_DA.csv")
+# write.csv(item_predictions_DA, file = "tests/fixtures/items_predictions_DA.csv")
+# write.csv(construct_predictions_EA, file = "tests/fixtures/construct_predictions_EA.csv")
+# write.csv(item_predictions_EA, file = "tests/fixtures/items_predictions_EA.csv")
 
 # Load controls
 construct_predictions_DA_control <- as.matrix(read.csv("../fixtures/construct_predictions_DA.csv", row.names = 1))
