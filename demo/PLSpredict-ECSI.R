@@ -85,3 +85,19 @@ segments(c(1:50),CUSL1sorted[,5],c(1:50),CUSL1sorted[,6], col = 'lightgrey', lwd
 segments(c(1:50),CUSL1sorted[,1],c(1:50),CUSL1sorted[,2], col = 'darkgrey', lwd = 3)
 points(x = c(1:50), y = CUSL1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
 points(x = c(1:50), y = CUSL1sorted[,3],pch = 20, cex = 0.8)
+
+
+########
+results <- evaluate_composite(mobi_pls)
+# Plot the OOS vs IS
+plot(x = results$composite_out_of_sample_predictions[,"Loyalty"], y = results$composite_in_sample_predictions[,"Loyalty"],
+     xlab = "OOS", ylab = "IS",
+     xlim = c(-2.5, 2.5), ylim = c(-2.5, 2.5))
+abline(v = 0, h = 0)
+abline(a = 0, b = 1)
+
+# Run regression
+cal_lm <- lm(results$composite_in_sample_predictions[,"Loyalty"] ~ results$composite_out_of_sample_predictions[,"Loyalty"])
+summary(cal_lm)
+abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
+
