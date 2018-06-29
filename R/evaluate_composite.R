@@ -122,3 +122,45 @@ predictive_accuracy <- function(results, construct) {
   cat(oos_MAE)
   cat("\n")
 }
+
+#' @export
+predictive_validity <- function(results, construct) {
+
+  # Collect information
+  actuals_star <- results$actuals_star
+  in_sample_predictions <- results$composite_in_sample_predictions
+  out_sample_predictions <- results$composite_out_of_sample_predictions
+
+  # Run calibration regression
+  cal_lm <- lm(in_sample_predictions[,construct] ~ out_sample_predictions[,construct])
+  summary(cal_lm)
+  cal_sum <- summary(cal_lm)
+
+  # create
+  holder <- as.data.frame(cbind(in_sample_predictions[,construct],out_sample_predictions[,construct], actuals_star[,construct]))
+  colnames(holder) <- c("IS","OOS","actual")
+  holder$Cook <- cooks.distance(cal_lm)
+  holder$Cook_degree <- 0
+  holder[holder$Cook < (4/nrow(holder)),"Cook_degree"] <- 1
+  holder[holder$Cook > (4/nrow(holder)),"Cook_degree"] <- 2
+  holder[holder$Cook > 1,"Cook_degree"] <- 3
+
+  plot(y = holder$IS, x = holder$OOS,
+       xlab = "Out-of-sample Predictions",
+       ylab = "In-sample Predictions",
+       xlim = c(-2.5, 2.5),
+       ylim = c(-2.5, 2.5),
+       pch = c(16, 15, 17)[holder$Cook_degree],
+       col = c((rgb(0,0,0, alpha = 0.6)),(rgb(0,0,1, alpha = 1)),(rgb(1,0,1, alpha = 0.6)))[holder$Cook_degree],
+       main = paste("Overfit Diagram - ",construct))
+  abline(v = 0, h = 0)
+  abline(a = 0, b = 1)
+  abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
+
+  cal_sum$coefficients[2,1] <- cal_sum$coefficients[2,1] - 1
+  cal_sum$coefficients[2,3] <- cal_sum$coefficients[2,1]/cal_sum$coefficients[2,2]
+  cal_sum$coefficients[2,4] <- pt(cal_sum$coefficients[2,3],df = nrow(holder)-1, lower.tail = TRUE)
+  print(cal_sum$coefficients)
+
+
+}
