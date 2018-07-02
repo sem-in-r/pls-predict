@@ -28,11 +28,21 @@ mobi_pls <- estimate_pls(data = mobi,
                          structural_model = mobi_sm)
 
 
+# Generating predictions for the full model - k-fold
+pred_mobi_pls <- generate_predictions(mobi_pls,
+                                      technique = predict_DA,
+                                      noFolds = 10)
+
+# Evaluate predictive accuracy of constructs - Loyalty
+predictive_accuracy(pred_mobi_pls, "Loyalty")
+
+# Evaluate predictive validity of constructs - Loyalty
+predictive_validity(pred_mobi_pls, "Loyalty")
+
 #Slice data into training set and test set
-index=sort(sample.int(dim(mobi)[1],83,replace=F))
+index=sort(sample.int(dim(mobi)[1],50,replace=F))
 trainData=mobi[-index,]
 testData=mobi[index,]
-
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
@@ -42,20 +52,17 @@ mobi_pls_train <- estimate_pls(data = trainData,
 # Generate the predictions
 mobi_pls_predict <- PLSpredict(model = mobi_pls_train,
                                testData = testData,
-                               technique = predict_EA)
-
-# Return the predicted data
-mobi_pls_predict
+                               technique = predict_DA)
 
 #Call predictionInterval (shortened number of bootstraps for demonstration)
 PIntervals <- predictionInterval(model = mobi_pls_train,
                                  testData = testData,
-                                 technique = predict_EA,
+                                 technique = predict_DA,
                                  PIprobs = 0.95,
                                  noBoots = 500)
 
 #Call validatepredict
-predictionMetrics <- validatePredict(mobi_pls, technique = predict_EA, noFolds=10)
+predictionMetrics <- validatePredict(mobi_pls, technique = predict_DA, noFolds=10)
 predictionMetrics$PLSRMSE
 predictionMetrics$LMRMSE
 predictionMetrics$PLSMAPE
@@ -65,20 +72,12 @@ predictionMetrics$LMMAD
 
 # Visualization of Prediction Intervals
 ##Create Holders & assign PI data
-aveCUSL1 <- PIntervals$averageCasePI[[1]]
-aveCUSL2 <- PIntervals$averageCasePI[[2]]
-aveCUSL3 <- PIntervals$averageCasePI[[3]]
-casewiseCUSL1 <- PIntervals$caseWisePI[[1]]
-casewiseCUSL2 <- PIntervals$caseWisePI[[2]]
-casewiseCUSL3 <- PIntervals$caseWisePI[[3]]
+aveCUSL1 <- PIntervals$averageCasePI[["CUSL1"]]
+casewiseCUSL1 <- PIntervals$caseWisePI[["CUSL1"]]
 
 ##Allocate and sort data - first by actual data and then by predicted data
 dataholderCUSL1 <- cbind(t(aveCUSL1),mobi_pls_predict$predicted_Measurements[,"CUSL1"], mobi_pls_predict$testData[,"CUSL1"],t(casewiseCUSL1) )
-dataholderCUSL2 <- cbind(t(aveCUSL2),mobi_pls_predict$predicted_Measurements[,"CUSL2"], mobi_pls_predict$testData[,"CUSL2"],t(casewiseCUSL2) )
-dataholderCUSL3 <- cbind(t(aveCUSL3),mobi_pls_predict$predicted_Measurements[,"CUSL3"], mobi_pls_predict$testData[,"CUSL3"],t(casewiseCUSL3) )
 CUSL1sorted <- dataholderCUSL1[order(dataholderCUSL1[,4], dataholderCUSL1[,3]) , ]
-CUSL2sorted <- dataholderCUSL2[order(dataholderCUSL2[,4], dataholderCUSL2[,3]) , ]
-CUSL3sorted <- dataholderCUSL3[order(dataholderCUSL3[,4], dataholderCUSL3[,3]) , ]
 
 ##Plot results function
 ###Item CUSL1 residuals
@@ -89,7 +88,7 @@ abline(h = -predictionMetrics$PLSRMSE[,1], lty = 2)
 
 ### Item Y11 PLS Prediction Intervals
 plot(NULL, xlim = c(1,nrow(CUSL1sorted)), ylim = c(0,12), ylab = "Ranges", xlab = "Cases", type = "n", main = "PLS Prediction Intervals for item CUSL1")
-segments(c(1:83),CUSL1sorted[,5],c(1:83),CUSL1sorted[,6], col = 'lightgrey', lwd = 3)
-segments(c(1:83),CUSL1sorted[,1],c(1:83),CUSL1sorted[,2], col = 'darkgrey', lwd = 3)
-points(x = c(1:83), y = CUSL1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
-points(x = c(1:83), y = CUSL1sorted[,3],pch = 20, cex = 0.8)
+segments(c(1:50),CUSL1sorted[,5],c(1:50),CUSL1sorted[,6], col = 'lightgrey', lwd = 3)
+segments(c(1:50),CUSL1sorted[,1],c(1:50),CUSL1sorted[,2], col = 'darkgrey', lwd = 3)
+points(x = c(1:50), y = CUSL1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
+points(x = c(1:50), y = CUSL1sorted[,3],pch = 20, cex = 0.8)

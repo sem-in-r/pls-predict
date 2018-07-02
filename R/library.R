@@ -60,7 +60,7 @@ predict_EA <- function(smMatrix, path_coef, construct_scores) {
     return_matrix[,latent] <- return_matrix %*% path_coef[,latent]
 
   }
- return_matrix
+ return(return_matrix)
 }
 
 #' Predictive Scheme
@@ -80,6 +80,8 @@ predict_EA <- function(smMatrix, path_coef, construct_scores) {
 #'
 #' @export
 predict_DA <- function(smMatrix, path_coef, construct_scores) {
+  only_exogenous <- setdiff(unique(smMatrix[,1]), unique(smMatrix[,2]))
   return_matrix <- construct_scores%*%path_coef
-  return_matrix
+  return_matrix[,only_exogenous] <- construct_scores[,only_exogenous]
+  return(return_matrix)
 }
