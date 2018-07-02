@@ -1,6 +1,6 @@
 
 #' @export
-evaluate_composite <- function(model, technique = predict_DA, noFolds = 10) {
+generate_predictions <- function(model, technique = predict_DA, noFolds = 10) {
   # collect model specs
   data <- model$data
   measurement_model <- model$mmMatrix
@@ -86,25 +86,30 @@ predictive_accuracy <- function(results, construct) {
   holder_sorted$average_case_PI_upper <- holder_sorted$OOS + 1.96*oos_RMSE
   holder_sorted$average_case_PI_lower <- holder_sorted$OOS - 1.96*oos_RMSE
 
+  ## Highlight influential cases
+  influential_cases <- rownames(subset(holder_sorted, (holder_sorted$actual < holder_sorted$average_case_PI_lower)|(holder_sorted$actual > holder_sorted$average_case_PI_upper) ))
+  holder_sorted$influential_cases <- 1
+  holder_sorted[influential_cases,"influential_cases"] <- 2
   ### PLS Prediction Interval Plot
-  plot(NULL,
+  graphics::plot(NULL,
        xlim = c(1,nrow(holder_sorted)),
        ylim = c(-3,3),
        ylab = "Predictions, Actuals",
        xlab = "Cases, sorted by actuals then predicted values",
        type = "n",
        main = "PLS OOS Predictive Evaluation for Construct")
-  segments(c(1:nrow(holder_sorted)),
+  graphics::segments(c(1:nrow(holder_sorted)),
            holder_sorted$average_case_PI_lower,
            c(1:nrow(holder_sorted)),
            holder_sorted$average_case_PI_upper,
            col = 'lightgrey',
            lwd = 3)
-  points(x = c(1:nrow(holder_sorted)),
+  graphics::points(x = c(1:nrow(holder_sorted)),
          y = holder_sorted$actual,
-         pch = 21,
+         pch = c(21,24)[holder_sorted$influential_cases],
+         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$influential_cases],
          cex = 0.4)
-  points(x = c(1:nrow(holder_sorted)),
+  graphics::points(x = c(1:nrow(holder_sorted)),
          y = holder_sorted$OOS,
          pch = 20,
          cex = 0.3)
@@ -121,6 +126,15 @@ predictive_accuracy <- function(results, construct) {
   cat("OOS MAE : ")
   cat(oos_MAE)
   cat("\n")
+  cat("Influential Cases:\n")
+  cat(influential_cases)
+  cat("\n")
+  return(list(evaluation_matrix = holder_sorted,
+              IS_RMSE = is_RMSE,
+              OOS_RMSE = oos_RMSE,
+              IS_MAE = is_MAE,
+              OOS_MAE = oos_MAE,
+              influential_cases = influential_cases))
 }
 
 #' @export
@@ -132,35 +146,52 @@ predictive_validity <- function(results, construct) {
   out_sample_predictions <- results$composite_out_of_sample_predictions
 
   # Run calibration regression
-  cal_lm <- lm(in_sample_predictions[,construct] ~ out_sample_predictions[,construct])
-  summary(cal_lm)
+  cal_lm <- stats::lm(in_sample_predictions[,construct] ~ out_sample_predictions[,construct])
   cal_sum <- summary(cal_lm)
 
   # create
   holder <- as.data.frame(cbind(in_sample_predictions[,construct],out_sample_predictions[,construct], actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
-  holder$Cook <- cooks.distance(cal_lm)
+  holder$Cook <- stats::cooks.distance(cal_lm)
   holder$Cook_degree <- 0
   holder[holder$Cook < (4/nrow(holder)),"Cook_degree"] <- 1
   holder[holder$Cook > (4/nrow(holder)),"Cook_degree"] <- 2
   holder[holder$Cook > 1,"Cook_degree"] <- 3
 
-  plot(y = holder$IS, x = holder$OOS,
+  graphics::plot(y = holder$IS, x = holder$OOS,
        xlab = "Out-of-sample Predictions",
        ylab = "In-sample Predictions",
        xlim = c(-2.5, 2.5),
        ylim = c(-2.5, 2.5),
        pch = c(16, 15, 17)[holder$Cook_degree],
-       col = c((rgb(0,0,0, alpha = 0.6)),(rgb(0,0,1, alpha = 1)),(rgb(1,0,1, alpha = 0.6)))[holder$Cook_degree],
+       col = c((grDevices::rgb(0,0,0, alpha = 0.6)),(grDevices::rgb(0,0,1, alpha = 1)),(grDevices::rgb(1,0,1, alpha = 0.6)))[holder$Cook_degree],
        main = paste("Overfit Diagram - ",construct))
-  abline(v = 0, h = 0)
-  abline(a = 0, b = 1)
-  abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
+  graphics::abline(v = 0, h = 0)
+  graphics::abline(a = 0, b = 1)
+  graphics::abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
 
-  cal_sum$coefficients[2,1] <- cal_sum$coefficients[2,1] - 1
-  cal_sum$coefficients[2,3] <- cal_sum$coefficients[2,1]/cal_sum$coefficients[2,2]
-  cal_sum$coefficients[2,4] <- pt(cal_sum$coefficients[2,3],df = nrow(holder)-1, lower.tail = TRUE)
+  rownames(cal_sum$coefficients) <- c(paste("Bias -",construct),paste("Accuracy -", construct))
+  cal_sum$coefficients[2,1] <- cal_sum$coefficients[2,1]
+  cal_sum$coefficients[2,3] <- (cal_sum$coefficients[2,1]-1)/cal_sum$coefficients[2,2]
+  cal_sum$coefficients[2,4] <- stats::pt(cal_sum$coefficients[2,3],df = nrow(holder)-1, lower.tail = TRUE)
   print(cal_sum$coefficients)
-
-
+  cat("\n")
+  cat("Cases with Cook's Distance > 1\n")
+  if (length(rownames(holder[holder$Cook_degree == 3,]))>0) {
+    #cat(rownames(holder[holder$Cook_degree == 3,]))
+    print(holder[holder$Cook_degree == 3,c(1,2,4)])
+  } else {
+    cat("None\n")
+  }
+  cat("Cases with Cook's Distance > 4/n\n")
+  if (length(rownames(holder[holder$Cook_degree == 2,]))>0) {
+    #cat(rownames(holder[holder$Cook_degree == 2,]))
+    print(holder[holder$Cook_degree == 2,c(1,2,4)])
+  } else {
+    cat("None\n")
+  }
+  cat("\n")
+  return(list(evaluation_matrix = holder,
+              linear_model = cal_sum,
+              influential_cases = holder[(holder$Cook_degree == 2)|(holder$Cook_degree == 3),c(1,2,4)]))
 }

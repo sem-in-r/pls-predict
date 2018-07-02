@@ -35,19 +35,19 @@ testData=mobi[201:250,]
 
 
 # Train the predictive model
-mobi_pls_train <- seminr::estimate_pls(data = trainData,
+utils::capture.output(mobi_pls_train <- seminr::estimate_pls(data = trainData,
                                measurement_model = mobi_mm,
-                               structural_model = mobi_sm)
+                               structural_model = mobi_sm))
 
 # Generate the predictions
-mobi_pls_predict_DA <- PLSpredict(model = mobi_pls_train,
+utils::capture.output(mobi_pls_predict_DA <- PLSpredict(model = mobi_pls_train,
                                testData = testData,
-                               technique = predict_DA)
+                               technique = predict_DA))
 
 # Generate the predictions
-mobi_pls_predict_EA <- PLSpredict(model = mobi_pls_train,
+utils::capture.output(mobi_pls_predict_EA <- PLSpredict(model = mobi_pls_train,
                                   testData = testData,
-                                  technique = predict_EA)
+                                  technique = predict_EA))
 
 construct_predictions_DA <- mobi_pls_predict_DA$predicted_CompositeScores
 item_predictions_DA <- mobi_pls_predict_DA$predicted_Measurements

@@ -28,11 +28,21 @@ mobi_pls <- estimate_pls(data = mobi,
                          structural_model = mobi_sm)
 
 
+# Generating predictions for the full model - k-fold
+pred_mobi_pls <- generate_predictions(mobi_pls,
+                                      technique = predict_DA,
+                                      noFolds = 10)
+
+# Evaluate predictive accuracy of constructs - Loyalty
+predictive_accuracy(pred_mobi_pls, "Loyalty")
+
+# Evaluate predictive validity of constructs - Loyalty
+predictive_validity(pred_mobi_pls, "Loyalty")
+
 #Slice data into training set and test set
 index=sort(sample.int(dim(mobi)[1],50,replace=F))
 trainData=mobi[-index,]
 testData=mobi[index,]
-
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
@@ -43,9 +53,6 @@ mobi_pls_train <- estimate_pls(data = trainData,
 mobi_pls_predict <- PLSpredict(model = mobi_pls_train,
                                testData = testData,
                                technique = predict_DA)
-
-# Return the predicted data
-mobi_pls_predict
 
 #Call predictionInterval (shortened number of bootstraps for demonstration)
 PIntervals <- predictionInterval(model = mobi_pls_train,
@@ -85,19 +92,3 @@ segments(c(1:50),CUSL1sorted[,5],c(1:50),CUSL1sorted[,6], col = 'lightgrey', lwd
 segments(c(1:50),CUSL1sorted[,1],c(1:50),CUSL1sorted[,2], col = 'darkgrey', lwd = 3)
 points(x = c(1:50), y = CUSL1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
 points(x = c(1:50), y = CUSL1sorted[,3],pch = 20, cex = 0.8)
-
-
-########
-results <- evaluate_composite(mobi_pls)
-# Plot the OOS vs IS
-plot(x = results$composite_out_of_sample_predictions[,"Loyalty"], y = results$composite_in_sample_predictions[,"Loyalty"],
-     xlab = "OOS", ylab = "IS",
-     xlim = c(-2.5, 2.5), ylim = c(-2.5, 2.5))
-abline(v = 0, h = 0)
-abline(a = 0, b = 1)
-
-# Run regression
-cal_lm <- lm(results$composite_in_sample_predictions[,"Loyalty"] ~ results$composite_out_of_sample_predictions[,"Loyalty"])
-summary(cal_lm)
-abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
-
