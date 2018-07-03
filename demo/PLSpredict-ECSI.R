@@ -23,13 +23,13 @@ mobi_sm <- relationships(
 )
 
 # Estimating the full model
-mobi_pls <- estimate_pls(data = mobi,
+mobi_pls_train <- estimate_pls(data = trainData,
                          measurement_model = mobi_mm,
                          structural_model = mobi_sm)
 
 
 # Generating predictions for the full model - k-fold
-pred_mobi_pls <- generate_predictions(mobi_pls,
+pred_mobi_pls <- kfold_predict(mobi_pls,
                                       technique = predict_DA,
                                       noFolds = 10)
 

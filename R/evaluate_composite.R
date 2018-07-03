@@ -1,6 +1,6 @@
 
 #' @export
-generate_predictions <- function(model, technique = predict_DA, noFolds = 10) {
+kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
   # collect model specs
   data <- model$data
   measurement_model <- model$mmMatrix
@@ -54,17 +54,18 @@ generate_predictions <- function(model, technique = predict_DA, noFolds = 10) {
   }
 
   rownames(PLS_predicted_outsample) <- rownames(average_insample) <- order
-
+  #TODO: Remove predictions from variable names
   results <- list(composite_out_of_sample_predictions = PLS_predicted_outsample,
                   composite_in_sample_predictions = average_insample,
                   actuals_star = actuals_star[order,])
-  class(results) <- "PLSpredictions"
+  class(results) <- "kfold_pls_predictions"
   return(results)
 }
 
 #' @export
 predictive_accuracy <- function(results, construct) {
-
+  # TODO: rename results to kfold_predictions
+  # TODO: Remove collect information sections from all methods - consider better naming strategies
   # Collect information
   actuals_star <- results$actuals_star
   in_sample_predictions <- results$composite_in_sample_predictions
@@ -77,6 +78,7 @@ predictive_accuracy <- function(results, construct) {
   is_RMSE <- sqrt(mean((actuals_star[,construct] - in_sample_predictions[,construct])^2))
   is_MAE <- mean(abs(actuals_star[,construct] - in_sample_predictions[,construct]))
 
+  # TODO: Move vis to a seperate function
   ##Allocate and sort data - first by actual data and then by predicted data
   holder <- as.data.frame(cbind(in_sample_predictions[,construct],out_sample_predictions[,construct], actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
