@@ -44,29 +44,22 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   normData <- testData[,model$mmVariables]
 
   #Normalize data
-  #for (i in pMeasurements)
-  for (i in model$mmVariables)
-  {
-    normData[,i] <-(normData[,i] - model$meanData[i])/model$sdData[i]
-  }
+  normData[,model$mmVariables] <- t(t(sweep(normData[,model$mmVariables],2,model$meanData[model$mmVariables])) / model$sdData[model$mmVariables])
 
   #Convert dataset to matrix
   normData<-data.matrix(normData)
 
   #Estimate Factor Scores from Outter Path
-  fscores <- normData%*%model$outer_weights
+  construct_scores <- normData%*%model$outer_weights
 
   #Estimate Factor Scores from Inner Path and complete Matrix
-  fscores <- technique(model$smMatrix, model$path_coef, fscores)
+  construct_scores <- technique(model$smMatrix, model$path_coef, construct_scores)
 
   #Predict Measurements with loadings
-  predictedMeasurements<-fscores%*% t(model$outer_loadings)
+  predictedMeasurements<-construct_scores%*% t(model$outer_loadings)
 
   #Denormalize data
-  for (i in model$mmVariables)
-  {
-    predictedMeasurements[,i]<-(predictedMeasurements[,i] * model$sdData[i])+model$meanData[i]
-  }
+  predictedMeasurements[,model$mmVariables] <- sweep((predictedMeasurements[,model$mmVariables] %*% diag(model$sdData[model$mmVariables])),2,model$meanData[model$mmVariables],"+")
 
   #Calculating the residuals
   residuals <- testData[,model$mmVariables] - predictedMeasurements[,model$mmVariables]
@@ -75,7 +68,7 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   predictResults <- list(testData = testData[,model$mmVariables],
                          predicted_Measurements = predictedMeasurements[,model$mmVariables],
                          residuals = residuals,
-                         predicted_CompositeScores = fscores)
+                         predicted_CompositeScores = construct_scores)
 
   class(predictResults) <- "predictResults"
   return(predictResults)
