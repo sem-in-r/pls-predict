@@ -33,11 +33,11 @@ utils::capture.output(pred_mobi_pls_DA <- kfold_predict(model = mobi_pls,
                                          technique = predict_DA,
                                          noFolds = 10))
 
-out_of_sample_predictions_EA <- pred_mobi_pls_EA$composite_out_of_sample_predictions
-in_sample_predictions_EA <- pred_mobi_pls_EA$composite_in_sample_predictions
+out_of_sample_predictions_EA <- pred_mobi_pls_EA$composite_out_of_sample
+in_sample_predictions_EA <- pred_mobi_pls_EA$composite_in_sample
 actuals_star_EA <-  pred_mobi_pls_EA$actuals_star
-out_of_sample_predictions_DA <- pred_mobi_pls_DA$composite_out_of_sample_predictions
-in_sample_predictions_DA <- pred_mobi_pls_DA$composite_in_sample_predictions
+out_of_sample_predictions_DA <- pred_mobi_pls_DA$composite_out_of_sample
+in_sample_predictions_DA <- pred_mobi_pls_DA$composite_in_sample
 actuals_star_DA <-  pred_mobi_pls_DA$actuals_star
 
 ## Output originally created using following lines

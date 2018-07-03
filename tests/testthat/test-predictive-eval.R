@@ -25,15 +25,15 @@ utils::capture.output(pred_mobi_pls_EA <- kfold_predict(model = mobi_pls,
                                       technique = predict_EA,
                                       noFolds = 10))
 
-utils::capture.output(pred_acc_EA <- predictive_accuracy(results = pred_mobi_pls_EA, construct = "Value"))
-utils::capture.output(pred_val_EA <- predictive_validity(results = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_acc_EA <- predictive_accuracy(kfold_predictions = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_val_EA <- predictive_validity(kfold_predictions = pred_mobi_pls_EA, construct = "Value"))
 
 utils::capture.output(pred_mobi_pls_DA <- kfold_predict(model = mobi_pls,
                                                                technique = predict_DA,
                                                                noFolds = 10))
 
-utils::capture.output(pred_acc_DA <- predictive_accuracy(results = pred_mobi_pls_DA, construct = "Value"))
-utils::capture.output(pred_val_DA <- predictive_validity(results = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_acc_DA <- predictive_accuracy(kfold_predictions = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_val_DA <- predictive_validity(kfold_predictions = pred_mobi_pls_DA, construct = "Value"))
 
 acc_matrix_EA <- pred_acc_EA$evaluation_matrix
 IS_RMSE_EA <- pred_acc_EA$IS_RMSE

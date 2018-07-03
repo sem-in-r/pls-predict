@@ -1,40 +1,31 @@
 
 #' @export
 kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
-  # collect model specs
-  data <- model$data
-  measurement_model <- model$mmMatrix
-  interactions <- model$mobi_xm
-  structural_model <- model$smMatrix
-  inner_weights <- model$inner_weights
-  constructs <- model$constructs
-  actuals_star <- model$construct_scores
-
 
   # shuffle data
-  order <- sample(nrow(data),nrow(data), replace = FALSE)
-  data <- data[order,]
+  order <- sample(nrow(model$data),nrow(model$data), replace = FALSE)
+  ordered_data <- model$data[order,]
 
   #Create 10 equally sized folds
-  folds <- cut(seq(1,nrow(data)),breaks=noFolds,labels=FALSE)
+  folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
 
   # Prepare matrices
-  PLS_predicted_outsample <- matrix(0,nrow = nrow(data),ncol = length(constructs),dimnames = list(1:nrow(data),constructs))
+  PLS_predicted_outsample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
   # In-sample predictions
-  PLS_predicted_insample <- matrix(0,nrow = nrow(data),ncol = (noFolds*length(constructs)),dimnames = list(1:nrow(data),rep(constructs,noFolds)))
+  PLS_predicted_insample <- matrix(0,nrow = nrow(ordered_data),ncol = (noFolds*length(model$constructs)),dimnames = list(1:nrow(ordered_data),rep(model$constructs,noFolds)))
 
   for(x in 1:noFolds) {
     testIndexes <- which(folds==x,arr.ind=TRUE)
     trainIndexes <- which(folds!=x,arr.ind=TRUE)
-    testingData <- data[testIndexes, ]
-    trainingData <- data[-testIndexes, ]
+    testingData <- ordered_data[testIndexes, ]
+    trainingData <- ordered_data[-testIndexes, ]
 
     #PLS prediction on testset model
     train_model <- seminr::estimate_pls(data = trainingData,
-                                        measurement_model = measurement_model,
-                                        interactions = interactions,
-                                        structural_model = structural_model,
-                                        inner_weights = inner_weights)
+                                        measurement_model = model$mmMatrix,
+                                        interactions = model$mobi_xm,
+                                        structural_model = model$smMatrix,
+                                        inner_weights = model$inner_weights)
     test_predictions <- PLSpredict(model = train_model,
                              testData = testingData,
                              technique = technique)
@@ -45,42 +36,36 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
     train_predictions <- PLSpredict(model = train_model,
                                     testData = trainingData,
                                     technique = technique)
-    PLS_predicted_insample[trainIndexes,(((x-1)*length(constructs))+1):(x*length(constructs))] <- train_predictions$predicted_CompositeScores
+    PLS_predicted_insample[trainIndexes,(((x-1)*length(model$constructs))+1):(x*length(model$constructs))] <- train_predictions$predicted_CompositeScores
   }
   # Collect the relevant data
-  average_insample <- matrix(0,nrow = nrow(data), ncol = length(constructs), dimnames = list(1:nrow(data),constructs))
-  for (z in 1:length(constructs)) {
-    average_insample[,z] <- rowSums(PLS_predicted_insample[,(0:(noFolds-1)*length(constructs))+z])/(noFolds-1)
+  average_insample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
+  for (z in 1:length(model$constructs)) {
+    average_insample[,z] <- rowSums(PLS_predicted_insample[,(0:(noFolds-1)*length(model$constructs))+z])/(noFolds-1)
   }
 
   rownames(PLS_predicted_outsample) <- rownames(average_insample) <- order
-  #TODO: Remove predictions from variable names
-  results <- list(composite_out_of_sample_predictions = PLS_predicted_outsample,
-                  composite_in_sample_predictions = average_insample,
-                  actuals_star = actuals_star[order,])
-  class(results) <- "kfold_pls_predictions"
+
+  results <- list(composite_out_of_sample = PLS_predicted_outsample,
+                  composite_in_sample = average_insample,
+                  actuals_star = model$construct_scores[order,])
+  class(results) <- "kfold_predictions"
   return(results)
 }
 
 #' @export
-predictive_accuracy <- function(results, construct) {
-  # TODO: rename results to kfold_predictions
-  # TODO: Remove collect information sections from all methods - consider better naming strategies
-  # Collect information
-  actuals_star <- results$actuals_star
-  in_sample_predictions <- results$composite_in_sample_predictions
-  out_sample_predictions <- results$composite_out_of_sample_predictions
+predictive_accuracy <- function(kfold_predictions, construct) {
 
   # Evaluate metrics
-  oos_RMSE <- sqrt(mean((actuals_star[,construct] - out_sample_predictions[,construct])^2))
-  oos_MAE <- mean(abs(actuals_star[,construct] - out_sample_predictions[,construct]))
+  oos_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_out_of_sample[,construct])^2))
+  oos_MAE <- mean(abs(kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_out_of_sample[,construct]))
 
-  is_RMSE <- sqrt(mean((actuals_star[,construct] - in_sample_predictions[,construct])^2))
-  is_MAE <- mean(abs(actuals_star[,construct] - in_sample_predictions[,construct]))
+  is_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct])^2))
+  is_MAE <- mean(abs(kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct]))
 
   # TODO: Move vis to a seperate function
   ##Allocate and sort data - first by actual data and then by predicted data
-  holder <- as.data.frame(cbind(in_sample_predictions[,construct],out_sample_predictions[,construct], actuals_star[,construct]))
+  holder <- as.data.frame(cbind(kfold_predictions$composite_in_sample[,construct],kfold_predictions$composite_out_of_sample[,construct], kfold_predictions$actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
   holder_sorted <- holder[order(holder[,"actual"], holder[,"OOS"]) , ]
 
@@ -141,19 +126,14 @@ predictive_accuracy <- function(results, construct) {
 }
 
 #' @export
-predictive_validity <- function(results, construct) {
-
-  # Collect information
-  actuals_star <- results$actuals_star
-  in_sample_predictions <- results$composite_in_sample_predictions
-  out_sample_predictions <- results$composite_out_of_sample_predictions
+predictive_validity <- function(kfold_predictions, construct) {
 
   # Run calibration regression
-  cal_lm <- stats::lm(in_sample_predictions[,construct] ~ out_sample_predictions[,construct])
+  cal_lm <- stats::lm(kfold_predictions$composite_in_sample[,construct] ~ kfold_predictions$composite_out_of_sample[,construct])
   cal_sum <- summary(cal_lm)
 
   # create
-  holder <- as.data.frame(cbind(in_sample_predictions[,construct],out_sample_predictions[,construct], actuals_star[,construct]))
+  holder <- as.data.frame(cbind(kfold_predictions$composite_in_sample[,construct],kfold_predictions$composite_out_of_sample[,construct], kfold_predictions$actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
   holder$Cook <- stats::cooks.distance(cal_lm)
   holder$Cook_degree <- 0

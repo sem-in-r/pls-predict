@@ -44,12 +44,6 @@
 #' @export
 predictionInterval <- function(model, testData, technique = predict_DA, PIprobs = 0.9,noBoots=200){
 
-  # Collect model specs
-  trainData <- model$data
-  smMatrix <- model$smMatrix
-  mmMatrix <- model$mmMatrix
-  mmVariables <- model$mmVariables
-
   # AVERAGE CASE PREDICTION INTERVAL
   # initialize output prediction dataframe
   # initialize output residual dataframe
@@ -62,13 +56,13 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
   #Bootstrap
   #TODO: parallelize bootstrap
   for (i in 1:noBoots) {
-    boot.index <- sort(sample(1:nrow(trainData), replace=TRUE))
-    trainData.boot <- trainData[boot.index,]
+    boot.index <- sort(sample(1:nrow(model$data), replace=TRUE))
+    trainData.boot <- model$data[boot.index,]
 
     #Call PLSpredict
     utils::capture.output(trainModel <- seminr::estimate_pls(trainData.boot,
-                               measurement_model = mmMatrix,
-                               structural_model = smMatrix))
+                               measurement_model = model$mmMatrix,
+                               structural_model = model$smMatrix))
     tempModel <- PLSpredict(model = trainModel,
                             testData = testData,
                             technique = technique)
@@ -81,8 +75,8 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
 
   func <- TeachingDemos::emp.hpd
   # Calculate Quantiles HPD
-  for (n in 1:length(mmVariables)) {
-    quantHolder[[n]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==mmVariables[n]] , 1, func, conf = PIprobs))
+  for (n in 1:length(model$mmVariables)) {
+    quantHolder[[n]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==model$mmVariables[n]] , 1, func, conf = PIprobs))
   }
 
   # Initialize Casewise PI holder
@@ -100,11 +94,11 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
   names(tempTotal) <- names(tempResidual)
 
   # and calculate quantiles HPD on
-  for (n in 1:length(mmVariables)) {
-    casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==mmVariables[n]] , 1, func, conf = PIprobs))
+  for (n in 1:length(model$mmVariables)) {
+    casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==model$mmVariables[n]] , 1, func, conf = PIprobs))
   }
 
-  names(casewiseHolder) <- names(quantHolder) <- mmVariables
+  names(casewiseHolder) <- names(quantHolder) <- model$mmVariables
 
   PIresults <- list(averageCasePI = quantHolder,
                     caseWisePI = casewiseHolder)

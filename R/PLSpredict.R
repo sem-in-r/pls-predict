@@ -39,51 +39,41 @@
 #'
 #' @export
 PLSpredict <- function(model, testData, technique = predict_DA){
-  #Get results from training model
-  smMatrix <- model$smMatrix
-  mmMatrix <- model$mmMatrix
-  ltVariables <- model$ltVariables
-  mmVariables <- model$mmVariables
-  outer_weights <- model$outer_weights
-  outer_loadings <- model$outer_loadings
-  meanData <- model$meanData
-  sdData <- model$sdData
-  path_coef<- model$path_coef
 
   #Extract Measurements needed for Predictions
-  normData <- testData[,mmVariables]
+  normData <- testData[,model$mmVariables]
 
   #Normalize data
   #for (i in pMeasurements)
-  for (i in mmVariables)
+  for (i in model$mmVariables)
   {
-    normData[,i] <-(normData[,i] - meanData[i])/sdData[i]
+    normData[,i] <-(normData[,i] - model$meanData[i])/model$sdData[i]
   }
 
   #Convert dataset to matrix
   normData<-data.matrix(normData)
 
   #Estimate Factor Scores from Outter Path
-  fscores <- normData%*%outer_weights
+  fscores <- normData%*%model$outer_weights
 
   #Estimate Factor Scores from Inner Path and complete Matrix
-  fscores <- technique(smMatrix, path_coef, fscores)
+  fscores <- technique(model$smMatrix, model$path_coef, fscores)
 
   #Predict Measurements with loadings
-  predictedMeasurements<-fscores%*% t(outer_loadings)
+  predictedMeasurements<-fscores%*% t(model$outer_loadings)
 
   #Denormalize data
-  for (i in mmVariables)
+  for (i in model$mmVariables)
   {
-    predictedMeasurements[,i]<-(predictedMeasurements[,i] * sdData[i])+meanData[i]
+    predictedMeasurements[,i]<-(predictedMeasurements[,i] * model$sdData[i])+model$meanData[i]
   }
 
   #Calculating the residuals
-  residuals <- testData[,mmVariables] - predictedMeasurements[,mmVariables]
+  residuals <- testData[,model$mmVariables] - predictedMeasurements[,model$mmVariables]
 
   #Prepare return Object
-  predictResults <- list(testData = testData[,mmVariables],
-                         predicted_Measurements = predictedMeasurements[,mmVariables],
+  predictResults <- list(testData = testData[,model$mmVariables],
+                         predicted_Measurements = predictedMeasurements[,model$mmVariables],
                          residuals = residuals,
                          predicted_CompositeScores = fscores)
 
