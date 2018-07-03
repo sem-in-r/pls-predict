@@ -1,17 +1,17 @@
 # Function to organize order of endogenous constructs from most exogenous forwards
 construct_order <- function(smMatrix) {
-  depends_on <- function(latents) {
+  depends_on <- function(constructs) {
     ret <- c()
-    for (latent in latents) {
-      ret <- c(ret,smMatrix[smMatrix[,"source"] == c(latent), "target"])
+    for (construct in constructs) {
+      ret <- c(ret,smMatrix[smMatrix[,"source"] == c(construct), "target"])
     }
     unique(ret)
   }
 
-  has_score <- function(latents, list) {
+  has_score <- function(constructs, list) {
     ret <- c()
-    for (latent in latents) {
-      next_val <- all(smMatrix[smMatrix[,"target"]==latent,"source"] %in% list)
+    for (construct in constructs) {
+      next_val <- all(smMatrix[smMatrix[,"target"]==construct,"source"] %in% list)
       ret <- c(ret,next_val)
     }
     ret
@@ -23,9 +23,9 @@ construct_order <- function(smMatrix) {
   # get ltVariables
   ltVariables <- unique(c(smMatrix[,1],smMatrix[,2]))
 
-  exogenous_latent <- setdiff(ltVariables, only_endogenous)
+  exogenous_construct <- setdiff(ltVariables, only_endogenous)
   scores_list <- only_exogenous
-  while (!setequal(exogenous_latent,scores_list)) {
+  while (!setequal(exogenous_construct,scores_list)) {
     scores_list <- c(scores_list,setdiff(depends_on(scores_list)[has_score(depends_on(scores_list), scores_list)], scores_list))
   }
 
@@ -56,8 +56,8 @@ predict_EA <- function(smMatrix, path_coef, construct_scores) {
   only_exogenous <- setdiff(unique(smMatrix[,1]), unique(smMatrix[,2]))
   return_matrix <- construct_scores
   return_matrix[,setdiff(colnames(return_matrix),only_exogenous)] <- 0
-  for (latent in order) {
-    return_matrix[,latent] <- return_matrix %*% path_coef[,latent]
+  for (construct in order) {
+    return_matrix[,construct] <- return_matrix %*% path_coef[,construct]
 
   }
  return(return_matrix)

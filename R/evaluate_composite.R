@@ -89,9 +89,9 @@ predictive_accuracy <- function(results, construct) {
   holder_sorted$average_case_PI_lower <- holder_sorted$OOS - 1.96*oos_RMSE
 
   ## Highlight influential cases
-  influential_cases <- rownames(subset(holder_sorted, (holder_sorted$actual < holder_sorted$average_case_PI_lower)|(holder_sorted$actual > holder_sorted$average_case_PI_upper) ))
-  holder_sorted$influential_cases <- 1
-  holder_sorted[influential_cases,"influential_cases"] <- 2
+  outliers <- rownames(subset(holder_sorted, (holder_sorted$actual < holder_sorted$average_case_PI_lower)|(holder_sorted$actual > holder_sorted$average_case_PI_upper) ))
+  holder_sorted$outliers <- 1
+  holder_sorted[outliers,"outliers"] <- 2
   ### PLS Prediction Interval Plot
   graphics::plot(NULL,
        xlim = c(1,nrow(holder_sorted)),
@@ -108,12 +108,13 @@ predictive_accuracy <- function(results, construct) {
            lwd = 3)
   graphics::points(x = c(1:nrow(holder_sorted)),
          y = holder_sorted$actual,
-         pch = c(21,24)[holder_sorted$influential_cases],
-         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$influential_cases],
+         pch = c(21,24)[holder_sorted$outliers],
+         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$outliers],
          cex = 0.4)
   graphics::points(x = c(1:nrow(holder_sorted)),
          y = holder_sorted$OOS,
-         pch = 20,
+         pch = c(20,16)[holder_sorted$outliers],
+         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$outliers],
          cex = 0.3)
 
   cat("IS RMSE : ")
@@ -128,15 +129,15 @@ predictive_accuracy <- function(results, construct) {
   cat("OOS MAE : ")
   cat(oos_MAE)
   cat("\n")
-  cat("Influential Cases:\n")
-  cat(influential_cases)
+  cat("Outlier Predictions:\n")
+  cat(outliers)
   cat("\n")
   return(list(evaluation_matrix = holder_sorted,
               IS_RMSE = is_RMSE,
               OOS_RMSE = oos_RMSE,
               IS_MAE = is_MAE,
               OOS_MAE = oos_MAE,
-              influential_cases = influential_cases))
+              outliers = outliers))
 }
 
 #' @export
