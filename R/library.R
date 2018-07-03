@@ -35,6 +35,17 @@ return(c(final_list,only_endogenous))
 
 }
 
+# Function to standardize a matrix by sd vector and mean vector
+standardize_data <- function(data_matrix,means_vector,sd_vector) {
+  return(t(t(sweep(data_matrix,2,means_vector)) / sd_vector))
+}
+
+# Function to un-standardize a matrix by sd vector and mean vector
+unstandardize_data <- function(data_matrix,means_vector,sd_vector) {
+  return(sweep((data_matrix %*% diag(sd_vector)),2,means_vector,"+"))
+}
+
+
 #' Predictive Scheme
 #'
 #' \code{predict_EA} and \code{predict_DA} specify the predictive scheme to be used in the generation of the

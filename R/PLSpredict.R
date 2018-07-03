@@ -43,8 +43,8 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   #Extract Measurements needed for Predictions
   normData <- testData[,model$mmVariables]
 
-  #Normalize data
-  normData[,model$mmVariables] <- t(t(sweep(normData[,model$mmVariables],2,model$meanData[model$mmVariables])) / model$sdData[model$mmVariables])
+  # Standardize data
+  normData[,model$mmVariables] <- standardize_data(normData[,model$mmVariables],model$meanData[model$mmVariables],model$sdData[model$mmVariables])
 
   #Convert dataset to matrix
   normData<-data.matrix(normData)
@@ -58,8 +58,8 @@ PLSpredict <- function(model, testData, technique = predict_DA){
   #Predict Measurements with loadings
   predictedMeasurements<-construct_scores%*% t(model$outer_loadings)
 
-  #Denormalize data
-  predictedMeasurements[,model$mmVariables] <- sweep((predictedMeasurements[,model$mmVariables] %*% diag(model$sdData[model$mmVariables])),2,model$meanData[model$mmVariables],"+")
+  # Unstandardize data
+  predictedMeasurements[,model$mmVariables] <- unstandardize_data(predictedMeasurements[,model$mmVariables],model$meanData[model$mmVariables],model$sdData[model$mmVariables])
 
   #Calculating the residuals
   residuals <- testData[,model$mmVariables] - predictedMeasurements[,model$mmVariables]
