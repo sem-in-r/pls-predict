@@ -26,16 +26,16 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
                                         interactions = model$mobi_xm,
                                         structural_model = model$smMatrix,
                                         inner_weights = model$inner_weights)
-    test_predictions <- PLSpredict(model = train_model,
-                             testData = testingData,
-                             technique = technique)
+    test_predictions <- stats::predict(object = train_model,
+                                testData = testingData,
+                                technique = technique)
 
     PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_CompositeScores
 
     #PLS prediction on trainset model
-    train_predictions <- PLSpredict(model = train_model,
-                                    testData = trainingData,
-                                    technique = technique)
+    train_predictions <- stats::predict(object = train_model,
+                                 testData = trainingData,
+                                 technique = technique)
     PLS_predicted_insample[trainIndexes,(((x-1)*length(model$constructs))+1):(x*length(model$constructs))] <- train_predictions$predicted_CompositeScores
   }
   # Collect the relevant data

@@ -91,9 +91,9 @@ validatePredict <- function(model, technique = predict_DA, noFolds=10){
     utils::capture.output(train_pls_model <- seminr::estimate_pls(data = trainingData,
                                     measurement_model = model$mmMatrix,
                                     structural_model = model$smMatrix))
-    testHolder <- PLSpredict(train_pls_model,
-                             technique = technique,
-                             testData = testingData)
+    testHolder <- stats::predict(train_pls_model,
+                          technique = technique,
+                          testData = testingData)
 
     #Initialize PLS residuals and actuals holder matrices
     PLSactuals <- testHolder$testData[,targets]

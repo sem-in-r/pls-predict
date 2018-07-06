@@ -61,11 +61,11 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
 
     #Call PLSpredict
     utils::capture.output(trainModel <- seminr::estimate_pls(trainData.boot,
-                               measurement_model = model$mmMatrix,
-                               structural_model = model$smMatrix))
-    tempModel <- PLSpredict(model = trainModel,
-                            testData = testData,
-                            technique = technique)
+                                                             measurement_model = model$mmMatrix,
+                                                             structural_model = model$smMatrix))
+    tempModel <- stats::predict(object = trainModel,
+                         testData = testData,
+                         technique = technique)
     tempPredict <- cbind(tempPredict,data.frame(tempModel$predicted_Measurements))
     tempResidual <- cbind(tempResidual,data.frame(tempModel$residuals))
   }
