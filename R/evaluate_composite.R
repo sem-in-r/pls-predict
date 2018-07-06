@@ -2,6 +2,7 @@
 #' @export
 kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
 
+  stopifnot(inherits(model, "seminr_model"))
   # shuffle data
   order <- sample(nrow(model$data),nrow(model$data), replace = FALSE)
   ordered_data <- model$data[order,]
@@ -9,45 +10,16 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
   #Create 10 equally sized folds
   folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
 
-  # Prepare matrices
-  PLS_predicted_outsample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
-  # In-sample predictions
-  PLS_predicted_insample <- matrix(0,nrow = nrow(ordered_data),ncol = (noFolds*length(model$constructs)),dimnames = list(1:nrow(ordered_data),rep(model$constructs,noFolds)))
+  # collect in-sample and out-sample prediction matrices
+  pred_matrices <- prediction_matrices(folds, noFolds, ordered_data, model,technique)
+  PLS_predicted_outsample <- pred_matrices$out_of_sample
+  PLS_predicted_insample <- pred_matrices$in_sample
 
-  for(x in 1:noFolds) {
-    testIndexes <- which(folds==x,arr.ind=TRUE)
-    trainIndexes <- which(folds!=x,arr.ind=TRUE)
-    testingData <- ordered_data[testIndexes, ]
-    trainingData <- ordered_data[-testIndexes, ]
-
-    #PLS prediction on testset model
-    train_model <- seminr::estimate_pls(data = trainingData,
-                                        measurement_model = model$mmMatrix,
-                                        interactions = model$mobi_xm,
-                                        structural_model = model$smMatrix,
-                                        inner_weights = model$inner_weights)
-    test_predictions <- stats::predict(object = train_model,
-                                testData = testingData,
-                                technique = technique)
-
-    PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_CompositeScores
-
-    #PLS prediction on trainset model
-    train_predictions <- stats::predict(object = train_model,
-                                 testData = trainingData,
-                                 technique = technique)
-    PLS_predicted_insample[trainIndexes,(((x-1)*length(model$constructs))+1):(x*length(model$constructs))] <- train_predictions$predicted_CompositeScores
-  }
-  # Collect the relevant data
-  average_insample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
-  for (z in 1:length(model$constructs)) {
-    average_insample[,z] <- rowSums(PLS_predicted_insample[,(0:(noFolds-1)*length(model$constructs))+z])/(noFolds-1)
-  }
-
-  rownames(PLS_predicted_outsample) <- rownames(average_insample) <- order
+  # assign the correct (randomized) rownumbers
+  rownames(PLS_predicted_outsample) <- rownames(PLS_predicted_insample) <- order
 
   results <- list(composite_out_of_sample = PLS_predicted_outsample,
-                  composite_in_sample = average_insample,
+                  composite_in_sample = PLS_predicted_insample,
                   actuals_star = model$construct_scores[order,])
   class(results) <- "kfold_predictions"
   return(results)

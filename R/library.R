@@ -96,3 +96,53 @@ predict_DA <- function(smMatrix, path_coef, construct_scores) {
   return_matrix[,only_exogenous] <- construct_scores[,only_exogenous]
   return(return_matrix)
 }
+
+# Function to return train and test predictions for a model
+in_and_out_sample_predictions <- function(x, folds, ordered_data, model,technique) {
+  testIndexes <- which(folds==x,arr.ind=TRUE)
+  trainIndexes <- which(folds!=x,arr.ind=TRUE)
+  testingData <- ordered_data[testIndexes, ]
+  trainingData <- ordered_data[-testIndexes, ]
+
+  # Create matrices for return data
+  PLS_predicted_outsample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  PLS_predicted_insample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  #PLS prediction on testset model
+  utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
+                                      measurement_model = model$mmMatrix,
+                                      interactions = model$mobi_xm,
+                                      structural_model = model$smMatrix,
+                                      inner_weights = model$inner_weights))
+  test_predictions <- stats::predict(object = train_model,
+                                     testData = testingData,
+                                     technique = technique)
+
+  PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_CompositeScores
+
+  #PLS prediction on trainset model
+  train_predictions <- stats::predict(object = train_model,
+                                      testData = trainingData,
+                                      technique = technique)
+  PLS_predicted_insample[trainIndexes,] <- train_predictions$predicted_CompositeScores
+  return(list(PLS_predicted_insample = PLS_predicted_insample,
+         PLS_predicted_outsample = PLS_predicted_outsample))
+}
+
+# Function to collect and parse prediction matrices
+prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
+  matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
+  in_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==1]])
+  out_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==0]])
+
+  average_insample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
+  for (z in 1:length(model$constructs)) {
+    average_insample[,z] <- rowSums(in_sample_matrix[,(0:(noFolds-1)*length(model$constructs))+z])/(noFolds-1)
+  }
+  average_outsample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
+  for (z in 1:length(model$constructs)) {
+    average_outsample[,z] <- rowSums(out_sample_matrix[,(0:(noFolds-1)*length(model$constructs))+z])
+  }
+  return(list(out_of_sample = average_outsample,
+              in_sample = average_insample))
+}
+
