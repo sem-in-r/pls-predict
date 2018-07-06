@@ -38,11 +38,12 @@ pred_mobi_pls <- kfold_predict(mobi_pls,
                                technique = predict_DA,
                                noFolds = 10)
 
-# Evaluate predictive accuracy of constructs - Loyalty
-predictive_accuracy(pred_mobi_pls, "Loyalty")
+pred_eval <- evaluate_composite(pred_mobi_pls, "Loyalty")
 
-# Evaluate predictive validity of constructs - Loyalty
-predictive_validity(pred_mobi_pls, "Loyalty")
+pred_sum <- summary(pred_eval)
+print(pred_sum)
+plot(pred_eval)
+plot(pred_sum)
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,

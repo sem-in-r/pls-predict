@@ -55,6 +55,7 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
 
 #' @export
 predictive_accuracy <- function(kfold_predictions, construct) {
+  stopifnot(inherits(kfold_predictions, "kfold_predictions"))
 
   # Evaluate metrics
   oos_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_out_of_sample[,construct])^2))
@@ -63,7 +64,6 @@ predictive_accuracy <- function(kfold_predictions, construct) {
   is_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct])^2))
   is_MAE <- mean(abs(kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct]))
 
-  # TODO: Move vis to a seperate function
   ##Allocate and sort data - first by actual data and then by predicted data
   holder <- as.data.frame(cbind(kfold_predictions$composite_in_sample[,construct],kfold_predictions$composite_out_of_sample[,construct], kfold_predictions$actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
@@ -77,52 +77,15 @@ predictive_accuracy <- function(kfold_predictions, construct) {
   outliers <- rownames(subset(holder_sorted, (holder_sorted$actual < holder_sorted$average_case_PI_lower)|(holder_sorted$actual > holder_sorted$average_case_PI_upper) ))
   holder_sorted$outliers <- 1
   holder_sorted[outliers,"outliers"] <- 2
-  ### PLS Prediction Interval Plot
-  graphics::plot(NULL,
-       xlim = c(1,nrow(holder_sorted)),
-       ylim = c(-3,3),
-       ylab = "Predictions, Actuals",
-       xlab = "Cases, sorted by actuals then predicted values",
-       type = "n",
-       main = "PLS OOS Predictive Evaluation for Construct")
-  graphics::segments(c(1:nrow(holder_sorted)),
-           holder_sorted$average_case_PI_lower,
-           c(1:nrow(holder_sorted)),
-           holder_sorted$average_case_PI_upper,
-           col = 'lightgrey',
-           lwd = 3)
-  graphics::points(x = c(1:nrow(holder_sorted)),
-         y = holder_sorted$actual,
-         pch = c(21,24)[holder_sorted$outliers],
-         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$outliers],
-         cex = 0.4)
-  graphics::points(x = c(1:nrow(holder_sorted)),
-         y = holder_sorted$OOS,
-         pch = c(20,16)[holder_sorted$outliers],
-         col = c((grDevices::rgb(0,0,0, alpha = 1)),(grDevices::rgb(0,0,1, alpha = 1)))[holder_sorted$outliers],
-         cex = 0.3)
 
-  cat("IS RMSE : ")
-  cat(is_RMSE)
-  cat("\n")
-  cat("OOS RMSE : ")
-  cat(oos_RMSE)
-  cat("\n")
-  cat("IS MAE : ")
-  cat(is_MAE)
-  cat("\n")
-  cat("OOS MAE : ")
-  cat(oos_MAE)
-  cat("\n")
-  cat("Outlier Predictions:\n")
-  cat(outliers)
-  cat("\n")
-  return(list(evaluation_matrix = holder_sorted,
-              IS_RMSE = is_RMSE,
-              OOS_RMSE = oos_RMSE,
-              IS_MAE = is_MAE,
-              OOS_MAE = oos_MAE,
-              outliers = outliers))
+  return_list <- list(evaluation_matrix = holder_sorted,
+                      IS_RMSE = is_RMSE,
+                      OOS_RMSE = oos_RMSE,
+                      IS_MAE = is_MAE,
+                      OOS_MAE = oos_MAE,
+                      outliers = outliers)
+  class(return_list) <- "composite_accuracy"
+  return(return_list)
 }
 
 #' @export
@@ -141,40 +104,25 @@ predictive_validity <- function(kfold_predictions, construct) {
   holder[holder$Cook > (4/nrow(holder)),"Cook_degree"] <- 2
   holder[holder$Cook > 1,"Cook_degree"] <- 3
 
-  graphics::plot(y = holder$IS, x = holder$OOS,
-       xlab = "Out-of-sample Predictions",
-       ylab = "In-sample Predictions",
-       xlim = c(-2.5, 2.5),
-       ylim = c(-2.5, 2.5),
-       pch = c(16, 15, 17)[holder$Cook_degree],
-       col = c((grDevices::rgb(0,0,0, alpha = 0.6)),(grDevices::rgb(0,0,1, alpha = 1)),(grDevices::rgb(1,0,1, alpha = 0.6)))[holder$Cook_degree],
-       main = paste("Overfit Diagram - ",construct))
-  graphics::abline(v = 0, h = 0)
-  graphics::abline(a = 0, b = 1)
-  graphics::abline(a = cal_lm$coefficients[1], b = cal_lm$coefficients[2], col = "red")
-
   rownames(cal_sum$coefficients) <- c(paste("Bias -",construct),paste("Accuracy -", construct))
   cal_sum$coefficients[2,1] <- cal_sum$coefficients[2,1]
   cal_sum$coefficients[2,3] <- (cal_sum$coefficients[2,1]-1)/cal_sum$coefficients[2,2]
   cal_sum$coefficients[2,4] <- stats::pt(cal_sum$coefficients[2,3],df = nrow(holder)-1, lower.tail = TRUE)
-  print(cal_sum$coefficients)
-  cat("\n")
-  cat("Cases with Cook's Distance > 1\n")
-  if (length(rownames(holder[holder$Cook_degree == 3,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 3,]))
-    print(holder[holder$Cook_degree == 3,c(1,2,4)])
-  } else {
-    cat("None\n")
-  }
-  cat("Cases with Cook's Distance > 4/n\n")
-  if (length(rownames(holder[holder$Cook_degree == 2,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 2,]))
-    print(holder[holder$Cook_degree == 2,c(1,2,4)])
-  } else {
-    cat("None\n")
-  }
-  cat("\n")
+
   return(list(evaluation_matrix = holder,
               linear_model = cal_sum,
               influential_cases = holder[(holder$Cook_degree == 2)|(holder$Cook_degree == 3),c(1,2,4)]))
+}
+
+# Function to evaluate kfold_predictions
+#' @export
+evaluate_composite <- function(kfold_predictions, construct) {
+  composite_accuracy <- predictive_accuracy(kfold_predictions, construct)
+  composite_validity <- predictive_validity(kfold_predictions, construct)
+
+  return_list <- list(composite_accuracy = composite_accuracy,
+                      composite_validity = composite_validity,
+                      construct = construct)
+  class(return_list) <- "composite_evaluation"
+  return(return_list)
 }
