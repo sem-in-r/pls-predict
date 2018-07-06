@@ -49,7 +49,7 @@ plot.composite_evaluation <- function(x,...) {
 
 #' @export
 plot.summary.composite_evaluation <- function(x,...) {
-  stopifnot(inherits(x, "composite_evaluation"))
+  stopifnot(inherits(x, "summary.composite_evaluation"))
 
   ### PLS Prediction Interval Plot
   accuracy_plot <- graphics::plot(NULL,
