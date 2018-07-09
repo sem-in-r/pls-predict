@@ -131,8 +131,8 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 # Function to collect and parse prediction matrices
 prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
-  in_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==1]])
-  out_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==0]])
+  in_sample_matrix <- do.call(cbind, matrices[(1:(noFolds*2))[1:(noFolds*2)%%2==1]])
+  out_sample_matrix <- do.call(cbind, matrices[(1:(noFolds*2))[1:(noFolds*2)%%2==0]])
 
   average_insample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
   for (z in 1:length(model$constructs)) {
