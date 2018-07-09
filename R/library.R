@@ -1,17 +1,17 @@
 # Function to organize order of endogenous constructs from most exogenous forwards
 construct_order <- function(smMatrix) {
-  depends_on <- function(latents) {
+  depends_on <- function(constructs) {
     ret <- c()
-    for (latent in latents) {
-      ret <- c(ret,smMatrix[smMatrix[,"source"] == c(latent), "target"])
+    for (construct in constructs) {
+      ret <- c(ret,smMatrix[smMatrix[,"source"] == c(construct), "target"])
     }
     unique(ret)
   }
 
-  has_score <- function(latents, list) {
+  has_score <- function(constructs, list) {
     ret <- c()
-    for (latent in latents) {
-      next_val <- all(smMatrix[smMatrix[,"target"]==latent,"source"] %in% list)
+    for (construct in constructs) {
+      next_val <- all(smMatrix[smMatrix[,"target"]==construct,"source"] %in% list)
       ret <- c(ret,next_val)
     }
     ret
@@ -23,9 +23,9 @@ construct_order <- function(smMatrix) {
   # get ltVariables
   ltVariables <- unique(c(smMatrix[,1],smMatrix[,2]))
 
-  exogenous_latent <- setdiff(ltVariables, only_endogenous)
+  exogenous_construct <- setdiff(ltVariables, only_endogenous)
   scores_list <- only_exogenous
-  while (!setequal(exogenous_latent,scores_list)) {
+  while (!setequal(exogenous_construct,scores_list)) {
     scores_list <- c(scores_list,setdiff(depends_on(scores_list)[has_score(depends_on(scores_list), scores_list)], scores_list))
   }
 
@@ -34,6 +34,17 @@ construct_order <- function(smMatrix) {
 return(c(final_list,only_endogenous))
 
 }
+
+# Function to standardize a matrix by sd vector and mean vector
+standardize_data <- function(data_matrix,means_vector,sd_vector) {
+  return(t(t(sweep(data_matrix,2,means_vector)) / sd_vector))
+}
+
+# Function to un-standardize a matrix by sd vector and mean vector
+unstandardize_data <- function(data_matrix,means_vector,sd_vector) {
+  return(sweep((data_matrix %*% diag(sd_vector)),2,means_vector,"+"))
+}
+
 
 #' Predictive Scheme
 #'
@@ -56,8 +67,8 @@ predict_EA <- function(smMatrix, path_coef, construct_scores) {
   only_exogenous <- setdiff(unique(smMatrix[,1]), unique(smMatrix[,2]))
   return_matrix <- construct_scores
   return_matrix[,setdiff(colnames(return_matrix),only_exogenous)] <- 0
-  for (latent in order) {
-    return_matrix[,latent] <- return_matrix %*% path_coef[,latent]
+  for (construct in order) {
+    return_matrix[,construct] <- return_matrix %*% path_coef[,construct]
 
   }
  return(return_matrix)
@@ -85,3 +96,53 @@ predict_DA <- function(smMatrix, path_coef, construct_scores) {
   return_matrix[,only_exogenous] <- construct_scores[,only_exogenous]
   return(return_matrix)
 }
+
+# Function to return train and test predictions for a model
+in_and_out_sample_predictions <- function(x, folds, ordered_data, model,technique) {
+  testIndexes <- which(folds==x,arr.ind=TRUE)
+  trainIndexes <- which(folds!=x,arr.ind=TRUE)
+  testingData <- ordered_data[testIndexes, ]
+  trainingData <- ordered_data[-testIndexes, ]
+
+  # Create matrices for return data
+  PLS_predicted_outsample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  PLS_predicted_insample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  #PLS prediction on testset model
+  utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
+                                      measurement_model = model$mmMatrix,
+                                      interactions = model$mobi_xm,
+                                      structural_model = model$smMatrix,
+                                      inner_weights = model$inner_weights))
+  test_predictions <- stats::predict(object = train_model,
+                                     testData = testingData,
+                                     technique = technique)
+
+  PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_CompositeScores
+
+  #PLS prediction on trainset model
+  train_predictions <- stats::predict(object = train_model,
+                                      testData = trainingData,
+                                      technique = technique)
+  PLS_predicted_insample[trainIndexes,] <- train_predictions$predicted_CompositeScores
+  return(list(PLS_predicted_insample = PLS_predicted_insample,
+         PLS_predicted_outsample = PLS_predicted_outsample))
+}
+
+# Function to collect and parse prediction matrices
+prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
+  matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
+  in_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==1]])
+  out_sample_matrix <- do.call(cbind, matrices[(1:20)[1:20%%2==0]])
+
+  average_insample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
+  for (z in 1:length(model$constructs)) {
+    average_insample[,z] <- rowSums(in_sample_matrix[,(0:(noFolds-1)*length(model$constructs))+z])/(noFolds-1)
+  }
+  average_outsample <- matrix(0,nrow = nrow(ordered_data), ncol = length(model$constructs), dimnames = list(1:nrow(ordered_data),model$constructs))
+  for (z in 1:length(model$constructs)) {
+    average_outsample[,z] <- rowSums(out_sample_matrix[,(0:(noFolds-1)*length(model$constructs))+z])
+  }
+  return(list(out_of_sample = average_outsample,
+              in_sample = average_insample))
+}
+

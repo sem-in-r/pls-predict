@@ -5,7 +5,6 @@
 /paper/*
 /data/composite.csv
 /toreview/*
-/PLSpredict/*
 *_next.*
 .DS_Store
 .dropbox

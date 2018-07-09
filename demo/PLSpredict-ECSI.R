@@ -22,6 +22,11 @@ mobi_sm <- relationships(
   paths(from = "Complaints",   to = "Loyalty")
 )
 
+#Slice data into training set and test set
+index=sort(sample.int(dim(mobi)[1],50,replace=F))
+trainData=mobi[-index,]
+testData=mobi[index,]
+
 # Estimating the full model
 mobi_pls <- estimate_pls(data = mobi,
                          measurement_model = mobi_mm,
@@ -29,20 +34,16 @@ mobi_pls <- estimate_pls(data = mobi,
 
 
 # Generating predictions for the full model - k-fold
-pred_mobi_pls <- generate_predictions(mobi_pls,
-                                      technique = predict_DA,
-                                      noFolds = 10)
+pred_mobi_pls <- kfold_predict(mobi_pls,
+                               technique = predict_DA,
+                               noFolds = 10)
 
-# Evaluate predictive accuracy of constructs - Loyalty
-predictive_accuracy(pred_mobi_pls, "Loyalty")
+pred_eval <- evaluate_composite(pred_mobi_pls, "Loyalty")
 
-# Evaluate predictive validity of constructs - Loyalty
-predictive_validity(pred_mobi_pls, "Loyalty")
-
-#Slice data into training set and test set
-index=sort(sample.int(dim(mobi)[1],50,replace=F))
-trainData=mobi[-index,]
-testData=mobi[index,]
+pred_sum <- summary(pred_eval)
+print(pred_sum)
+plot(pred_eval)
+plot(pred_sum)
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
@@ -50,9 +51,9 @@ mobi_pls_train <- estimate_pls(data = trainData,
                                structural_model = mobi_sm)
 
 # Generate the predictions
-mobi_pls_predict <- PLSpredict(model = mobi_pls_train,
-                               testData = testData,
-                               technique = predict_DA)
+mobi_pls_predict <- predict(object = mobi_pls_train,
+                            testData = testData,
+                            technique = predict_DA)
 
 #Call predictionInterval (shortened number of bootstraps for demonstration)
 PIntervals <- predictionInterval(model = mobi_pls_train,

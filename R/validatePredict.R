@@ -39,32 +39,27 @@
 #' @export
 validatePredict <- function(model, technique = predict_DA, noFolds=10){
 
-  # Collect the objects from the model
-  fullData <- model$data
-  smMatrix <- model$smMatrix
-  mmMatrix <- model$mmMatrix
-
   #Randomly shuffle the data
-  fullData <- fullData[sample(nrow(fullData)),]
+  fullData <- model$data[sample(nrow(model$data)),]
 
   #Create 10 equally size folds
   folds <- cut(seq(1,nrow(fullData)),breaks=noFolds,labels=FALSE)
 
   #Identify variables to be tested
-  uniqueTarget <- unique(smMatrix[,2])
+  uniqueTarget <- unique(model$smMatrix[,2])
   items <- NULL
   for (i in 1:length(uniqueTarget)){
-    items <- c(items, mmMatrix[mmMatrix[, "construct"] == uniqueTarget[i],"measurement"])
+    items <- c(items, model$mmMatrix[model$mmMatrix[, "construct"] == uniqueTarget[i],"measurement"])
   }
-  uniqueSource <- unique(smMatrix[,1])
+  uniqueSource <- unique(model$smMatrix[,1])
   sources <- NULL
   for (i in 1:length(uniqueSource)){
-    sources <- c(sources,mmMatrix[mmMatrix[,"construct"]==uniqueSource[i],"measurement"])
+    sources <- c(sources,model$mmMatrix[model$mmMatrix[,"construct"]==uniqueSource[i],"measurement"])
   }
   ##lmtarget <- ifelse(length(intersect(uniqueTarget, uniqueSource)) == 0, uniqueTarget,setdiff(uniqueTarget, uniqueSource))
   targets <- NULL
   for (i in uniqueTarget){
-    targets <- c(targets, mmMatrix[mmMatrix[, "construct"] == i,"measurement"])
+    targets <- c(targets, model$mmMatrix[model$mmMatrix[, "construct"] == i,"measurement"])
   }
 
 
@@ -94,11 +89,11 @@ validatePredict <- function(model, technique = predict_DA, noFolds=10){
 
     # Train PLS model
     utils::capture.output(train_pls_model <- seminr::estimate_pls(data = trainingData,
-                                    measurement_model = mmMatrix,
-                                    structural_model = smMatrix))
-    testHolder <- PLSpredict(train_pls_model,
-                             technique = technique,
-                             testData = testingData)
+                                    measurement_model = model$mmMatrix,
+                                    structural_model = model$smMatrix))
+    testHolder <- stats::predict(train_pls_model,
+                          technique = technique,
+                          testData = testingData)
 
     #Initialize PLS residuals and actuals holder matrices
     PLSactuals <- testHolder$testData[,targets]
@@ -112,7 +107,7 @@ validatePredict <- function(model, technique = predict_DA, noFolds=10){
     #LM Models
     for(l in uniqueTarget){
       # Extract the target and non-target variables for Linear Model
-      lmtargets <- mmMatrix[mmMatrix[,1] == l,2]
+      lmtargets <- model$mmMatrix[model$mmMatrix[,1] == l,2]
       for (item in lmtargets) {
         independentMatrix <- fullData[ , -which(names(fullData) %in% lmtargets)]
         dependentMatrix <- as.matrix(fullData[,lmtargets])

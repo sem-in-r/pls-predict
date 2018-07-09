@@ -21,32 +21,32 @@ utils::capture.output(mobi_pls <- seminr::estimate_pls(data = mobi,
                                  measurement_model = mobi_mm,
                                  structural_model = mobi_sm))
 
-utils::capture.output(pred_mobi_pls_EA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_EA <- kfold_predict(model = mobi_pls,
                                       technique = predict_EA,
                                       noFolds = 10))
 
-utils::capture.output(pred_acc_EA <- predictive_accuracy(results = pred_mobi_pls_EA, construct = "Value"))
-utils::capture.output(pred_val_EA <- predictive_validity(results = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_acc_EA <- predictive_accuracy(kfold_predictions = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_val_EA <- predictive_validity(kfold_predictions = pred_mobi_pls_EA, construct = "Value"))
 
-utils::capture.output(pred_mobi_pls_DA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_DA <- kfold_predict(model = mobi_pls,
                                                                technique = predict_DA,
                                                                noFolds = 10))
 
-utils::capture.output(pred_acc_DA <- predictive_accuracy(results = pred_mobi_pls_DA, construct = "Value"))
-utils::capture.output(pred_val_DA <- predictive_validity(results = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_acc_DA <- predictive_accuracy(kfold_predictions = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_val_DA <- predictive_validity(kfold_predictions = pred_mobi_pls_DA, construct = "Value"))
 
 acc_matrix_EA <- pred_acc_EA$evaluation_matrix
 IS_RMSE_EA <- pred_acc_EA$IS_RMSE
 OOS_RMSE_EA <- pred_acc_EA$OOS_RMSE
 OOS_MAE_EA <- pred_acc_EA$OOS_MAE
 IS_MAE_EA <- pred_acc_EA$IS_MAE
-acc_infl_cases_EA <- pred_acc_EA$influential_cases
+acc_infl_cases_EA <- pred_acc_EA$outliers
 acc_matrix_DA <- pred_acc_DA$evaluation_matrix
 IS_RMSE_DA <- pred_acc_DA$IS_RMSE
 OOS_RMSE_DA <- pred_acc_DA$OOS_RMSE
 OOS_MAE_DA <- pred_acc_DA$OOS_MAE
 IS_MAE_DA <- pred_acc_DA$IS_MAE
-acc_infl_cases_DA <- pred_acc_DA$influential_cases
+acc_infl_cases_DA <- pred_acc_DA$outliers
 
 val_matrix_EA <- pred_val_EA$evaluation_matrix
 val_coeff_EA <- pred_val_EA$linear_model$coefficients

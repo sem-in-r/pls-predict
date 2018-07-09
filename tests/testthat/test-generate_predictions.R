@@ -25,19 +25,19 @@ utils::capture.output(mobi_pls <- seminr::estimate_pls(data = mobi,
                                  measurement_model = mobi_mm,
                                  structural_model = mobi_sm))
 
-utils::capture.output(pred_mobi_pls_EA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_EA <- kfold_predict(model = mobi_pls,
                                       technique = predict_EA,
                                       noFolds = 10))
 
-utils::capture.output(pred_mobi_pls_DA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_DA <- kfold_predict(model = mobi_pls,
                                          technique = predict_DA,
                                          noFolds = 10))
 
-out_of_sample_predictions_EA <- pred_mobi_pls_EA$composite_out_of_sample_predictions
-in_sample_predictions_EA <- pred_mobi_pls_EA$composite_in_sample_predictions
+out_of_sample_predictions_EA <- pred_mobi_pls_EA$composite_out_of_sample
+in_sample_predictions_EA <- pred_mobi_pls_EA$composite_in_sample
 actuals_star_EA <-  pred_mobi_pls_EA$actuals_star
-out_of_sample_predictions_DA <- pred_mobi_pls_DA$composite_out_of_sample_predictions
-in_sample_predictions_DA <- pred_mobi_pls_DA$composite_in_sample_predictions
+out_of_sample_predictions_DA <- pred_mobi_pls_DA$composite_out_of_sample
+in_sample_predictions_DA <- pred_mobi_pls_DA$composite_in_sample
 actuals_star_DA <-  pred_mobi_pls_DA$actuals_star
 
 ## Output originally created using following lines

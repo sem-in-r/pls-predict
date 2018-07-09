@@ -40,14 +40,14 @@ utils::capture.output(mobi_pls_train <- seminr::estimate_pls(data = trainData,
                                structural_model = mobi_sm))
 
 # Generate the predictions
-utils::capture.output(mobi_pls_predict_DA <- PLSpredict(model = mobi_pls_train,
-                               testData = testData,
-                               technique = predict_DA))
+utils::capture.output(mobi_pls_predict_DA <- predict(object = mobi_pls_train,
+                                             testData = testData,
+                                             technique = predict_DA))
 
 # Generate the predictions
-utils::capture.output(mobi_pls_predict_EA <- PLSpredict(model = mobi_pls_train,
-                                  testData = testData,
-                                  technique = predict_EA))
+utils::capture.output(mobi_pls_predict_EA <- predict(object = mobi_pls_train,
+                                             testData = testData,
+                                             technique = predict_EA))
 
 construct_predictions_DA <- mobi_pls_predict_DA$predicted_CompositeScores
 item_predictions_DA <- mobi_pls_predict_DA$predicted_Measurements
