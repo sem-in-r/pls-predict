@@ -15,9 +15,11 @@
 #'
 #' @param noBoots The number of bootstraps to perform. Default is 200.
 #'
+#' @param cores The number of cores to perform parallel bootstrapping on.
+#'
 #' @usage
 #'
-#' predictionInterval(model, testData, technique, PIprobs, noBoots)
+#' predictionInterval(model, testData, technique, PIprobs, noBoots, cores)
 #'
 #' @examples
 #' library(seminr)
@@ -39,68 +41,112 @@
 #' )
 #'
 #' mobi_train <- estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm)
-#' prediction_intervals <- predictionInterval(mobi_train, testData)
+#' prediction_intervals <- predictionInterval(model = mobi_train, testData = testData, cores = 2)
 #'
 #' @export
-predictionInterval <- function(model, testData, technique = predict_DA, PIprobs = 0.9,noBoots=200){
+predictionInterval <- function(model, testData, technique = predict_DA, PIprobs = 0.9,noBoots=200, cores = NULL){
+ out <- tryCatch(
+   {
+    # AVERAGE CASE PREDICTION INTERVAL
+    # initialize output prediction dataframe
+    # initialize output residual dataframe
+    tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+    tempResidual <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+    tempHolder <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+    tempTotal <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+    casewiseHolder <- list()
+    quantHolder <- list()
 
-  # AVERAGE CASE PREDICTION INTERVAL
-  # initialize output prediction dataframe
-  # initialize output residual dataframe
-  # TODO: get output factors (don't assume they are reflective)
-  tempPredict <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
-  tempResidual <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
-  tempHolder <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
-  tempTotal <- as.data.frame(matrix(ncol=0, nrow=nrow(testData)))
+    # create cluster
+    suppressWarnings(ifelse(is.null(cores), cl <- parallel::makeCluster(parallel::detectCores()), cl <- parallel::makeCluster(cores)))
 
-  #Bootstrap
-  #TODO: parallelize bootstrap
-  for (i in 1:noBoots) {
-    boot.index <- sort(sample(1:nrow(model$data), replace=TRUE))
-    trainData.boot <- model$data[boot.index,]
+    # prepare vars for cluster export
+    measurement_model <- model$mmMatrix
+    interactions <- model$mobi_xm
+    structural_model <- model$smMatrix
+    inner_weights <- model$inner_weights
+    d <- model$rawdata
 
-    #Call PLSpredict
-    utils::capture.output(trainModel <- seminr::estimate_pls(trainData.boot,
-                                                             measurement_model = model$mmMatrix,
-                                                             structural_model = model$smMatrix))
-    tempModel <- stats::predict(object = trainModel,
-                         testData = testData,
-                         technique = technique)
-    tempPredict <- cbind(tempPredict,data.frame(tempModel$predicted_Measurements))
-    tempResidual <- cbind(tempResidual,data.frame(tempModel$residuals))
+    # Function to generate random samples with replacement
+    getRandomIndex <- function(d) {return(sample.int(nrow(d),replace = TRUE))}
+
+    # Export variables and functions to cluster
+    parallel::clusterExport(cl=cl, varlist=c("measurement_model", "interactions", "structural_model",
+                                             "inner_weights","getRandomIndex","d","testData","technique"), envir=environment())
+
+    # Function to get PLS prediction results
+    getEstimateResults <- function(i, d = d) {
+      utils::capture.output(boot_train <- seminr::estimate_pls(data = d[getRandomIndex(d),],
+                                         measurement_model,
+                                         interactions,
+                                         structural_model,
+                                         inner_weights))
+      testModel <- stats::predict(object = boot_train,
+                                  testData = testData,
+                                  technique = technique)
+
+      return(as.matrix(cbind(testModel$predicted_Measurements,testModel$residuals)))
+    }
+
+    utils::capture.output(bootmatrix <- parallel::parSapply(cl,1:noBoots,getEstimateResults, d))
+
+    func <- TeachingDemos::emp.hpd
+    # Calculate Quantiles HPD
+    count = 1
+    for (n in 1:length(model$mmVariables)) {
+      for (case in 1:nrow(testData)) {
+        quantHolder[[model$mmVariables[n]]][[rownames(testData)[case]]] <- func(bootmatrix[count,],conf = PIprobs)
+        count = count + 1
+      }
+      quantHolder[[model$mmVariables[n]]] <- matrix(unlist(quantHolder[model$mmVariables[n]]), nrow = 2, ncol = nrow(testData), byrow = FALSE)
+      colnames(quantHolder[[model$mmVariables[n]]]) <- rownames(testData)
+    }
+
+    # Initialize Casewise PI holder
+    casewiseHolder <- list()
+    tempResidual <- bootmatrix[(nrow(testData)*length(model$mmVariables)+1):(2*nrow(testData)*length(model$mmVariables)),]
+
+    tempHolder <- matrix(0,nrow = nrow(tempResidual), ncol = ncol(tempResidual))
+    # Randomly shuffle indexes for random error retrieval
+    # Columnwise, shuffle the tempResiduals rows
+    for (q in 1:ncol(tempResidual)) {
+      index <- sample.int(nrow(tempResidual),replace=F)
+      tempHolder[,q] <- tempResidual[index,q]
+    }
+    # Add the predicted values and random error (residuals)
+    tempTotal <- tempHolder + bootmatrix[1:(nrow(testData)*length(model$mmVariables)),]
+    #names(tempTotal) <- names(tempResidual)
+
+    # and calculate quantiles HPD on
+    count = 1
+    for (n in 1:length(model$mmVariables)) {
+      for (case in 1:nrow(testData)) {
+        casewiseHolder[[model$mmVariables[n]]][[rownames(testData)[case]]] <- func(tempTotal[count,],conf = PIprobs)
+        count = count + 1
+      }
+      casewiseHolder[[model$mmVariables[n]]] <- matrix(unlist(casewiseHolder[model$mmVariables[n]]), nrow = 2, ncol = nrow(testData), byrow = FALSE)
+      colnames(casewiseHolder[[model$mmVariables[n]]]) <- rownames(testData)
+    }
+
+    PIresults <- list(averageCasePI = quantHolder,
+                      caseWisePI = casewiseHolder)
+    parallel::stopCluster(cl)
+    return(PIresults)
+  },
+  error=function(cond) {
+    message("Bootstrapping encountered this ERROR: ")
+    message(cond)
+    parallel::stopCluster(cl)
+    return(NULL)
+  },
+  warning=function(cond) {
+    message("Bootstrapping encountered this WARNING:")
+    message(cond)
+    parallel::stopCluster(cl)
+    return(NULL)
+  },
+  finally={
+    #
   }
-
-  # Initialize Average Case PI holder
-  quantHolder <- list(NULL)
-
-  func <- TeachingDemos::emp.hpd
-  # Calculate Quantiles HPD
-  for (n in 1:length(model$mmVariables)) {
-    quantHolder[[n]] <- data.frame(apply(tempPredict[,colnames(tempPredict)==model$mmVariables[n]] , 1, func, conf = PIprobs))
-  }
-
-  # Initialize Casewise PI holder
-  casewiseHolder <- list(NULL)
-
-  # Randomly shuffle indexes for random error retrieval
-  # Columnwise, shuffle the tempResiduals rows
-  for (q in 1:ncol(tempResidual)) {
-    index <- sample.int(dim(testData),replace=F)
-    tempHolder[,q] <- tempResidual[index,q]
-  }
-
-  # Add the predicted values and random error (residuals)
-  tempTotal <- tempHolder + tempPredict
-  names(tempTotal) <- names(tempResidual)
-
-  # and calculate quantiles HPD on
-  for (n in 1:length(model$mmVariables)) {
-    casewiseHolder[[n]] <- data.frame(apply(tempTotal[,colnames(tempTotal)==model$mmVariables[n]] , 1, func, conf = PIprobs))
-  }
-
-  names(casewiseHolder) <- names(quantHolder) <- model$mmVariables
-
-  PIresults <- list(averageCasePI = quantHolder,
-                    caseWisePI = casewiseHolder)
-  return(PIresults)
+ )
 }
