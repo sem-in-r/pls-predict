@@ -73,8 +73,11 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   trainingData <- ordered_data[-testIndexes, ]
 
   # Create matrices for return data
-  PLS_predicted_outsample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
-  PLS_predicted_insample <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  PLS_predicted_outsample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  PLS_predicted_insample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
+  PLS_predicted_outsample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(1:nrow(ordered_data),model$mmVariables))
+  PLS_predicted_insample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(1:nrow(ordered_data),model$mmVariables))
+
   #PLS prediction on testset model
   utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
                                       measurement_model = model$mmMatrix,
@@ -85,15 +88,19 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
                                      testData = testingData,
                                      technique = technique)
 
-  PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_composite_scores
+  PLS_predicted_outsample_construct[testIndexes,] <-  test_predictions$predicted_composite_scores
+  PLS_predicted_outsample_item[testIndexes,] <- test_predictions$predicted_items
 
   #PLS prediction on trainset model
   train_predictions <- stats::predict(object = train_model,
                                       testData = trainingData,
                                       technique = technique)
-  PLS_predicted_insample[trainIndexes,] <- train_predictions$predicted_composite_scores
-  return(list(PLS_predicted_insample = PLS_predicted_insample,
-         PLS_predicted_outsample = PLS_predicted_outsample))
+  PLS_predicted_insample_construct[trainIndexes,] <- train_predictions$predicted_composite_scores
+  PLS_predicted_insample_item[trainIndexes,] <- train_predictions$predicted_items
+  return(list(PLS_predicted_insample = PLS_predicted_insample_construct,
+         PLS_predicted_outsample = PLS_predicted_outsample_construct,
+         PLS_predicted_insample_item = PLS_predicted_insample_item,
+         PLS_predicted_outsample_item = PLS_predicted_outsample_item))
 }
 
 # Function to collect and parse prediction matrices
@@ -101,22 +108,39 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   # create prediction matrices
   matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
   # collect the odd and even numbered matrices from the matrices return object
-  in_sample_matrix <- do.call(cbind, matrices[(1:(noFolds*2))[1:(noFolds*2)%%2==1]])
-  out_sample_matrix <- do.call(cbind, matrices[(1:(noFolds*2))[1:(noFolds*2)%%2==0]])
+  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==1]])
+  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==2]])
+  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==3]])
+  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==0]])
 
-  # mean the in-sample predictions by row
-  average_insample <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_matrix,
+  # mean the in-sample construct predictions by row
+  average_insample_construct <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_construct_matrix,
                                                                    noFolds = noFolds,
                                                                    constructs = model$constructs)
 
-  # sum the out-sample predictions by row
-  average_outsample <- sapply(1:length(model$constructs), sum_rows, matrix = out_sample_matrix,
+  # mean the in-sample item predictions by row
+  average_insample_item <- sapply(1:length(model$mmVariables), mean_rows, matrix = in_sample_item_matrix,
+                                       noFolds = noFolds,
+                                       constructs = model$mmVariables)
+
+  # sum the out-sample construct predictions by row
+  average_outsample_construct <- sapply(1:length(model$constructs), sum_rows, matrix = out_sample_construct_matrix,
                                                                     noFolds = noFolds,
                                                                     constructs = model$constructs)
-  colnames(average_insample) <- colnames(average_outsample) <- model$constructs
 
-  return(list(out_of_sample = average_outsample,
-              in_sample = average_insample))
+  # sum the out-sample item predictions by row
+  average_outsample_item <- sapply(1:length(model$mmVariables), sum_rows, matrix = out_sample_item_matrix,
+                                        noFolds = noFolds,
+                                        constructs = model$mmVariables)
+
+
+
+  colnames(average_insample_construct) <- colnames(average_outsample_construct) <- model$constructs
+
+  return(list(out_of_sample_construct = average_outsample_construct,
+              in_sample_construct = average_insample_construct,
+              out_of_sample_item = average_outsample_item,
+              in_sample_item = average_insample_item))
 }
 
 # Function to return the RMSE and MAE of a score

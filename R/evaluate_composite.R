@@ -12,14 +12,14 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
 
   # collect in-sample and out-sample prediction matrices
   pred_matrices <- prediction_matrices(folds, noFolds, ordered_data, model,technique)
-  PLS_predicted_outsample <- pred_matrices$out_of_sample
-  PLS_predicted_insample <- pred_matrices$in_sample
+  PLS_predicted_outsample_construct <- pred_matrices$out_of_sample_construct
+  PLS_predicted_insample_construct <- pred_matrices$in_sample_construct
 
   # assign the correct (randomized) rownumbers
-  rownames(PLS_predicted_outsample) <- rownames(PLS_predicted_insample) <- order
+  rownames(PLS_predicted_outsample_construct) <- rownames(PLS_predicted_insample_construct) <- order
 
-  results <- list(composite_out_of_sample = PLS_predicted_outsample,
-                  composite_in_sample = PLS_predicted_insample,
+  results <- list(composite_out_of_sample = PLS_predicted_outsample_construct,
+                  composite_in_sample = PLS_predicted_insample_construct,
                   actuals_star = model$construct_scores[order,])
   class(results) <- "kfold_predictions"
   return(results)

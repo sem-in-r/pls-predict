@@ -55,6 +55,9 @@ mobi_pls_predict <- predict(object = mobi_pls_train,
                             testData = testData,
                             technique = predict_DA)
 
+# Summary of the predictions
+summary(mobi_pls_predict)
+
 #Call predictionInterval (shortened number of bootstraps for demonstration)
 PIntervals <- predictionInterval(model = mobi_pls_train,
                                  testData = testData,

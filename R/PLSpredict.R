@@ -4,13 +4,15 @@ predict.seminr_model <- function(object, testData, technique = predict_DA, na.pr
   stopifnot(inherits(object, "seminr_model"))
 
   # Calculate actuals_star
-  fulldata <- rbind(object$data, testData)
-  fullmodel <- seminr::estimate_pls(data =fulldata,
+  # First reappend the testData to the trainData to get fulldata (do not duplicate rows)
+  fulldata <- object$data
+  fulldata[rownames(testData),] <- testData
+  utils::capture.output(fullmodel <- seminr::estimate_pls(data =fulldata,
                                     measurement_model = object$mmMatrix,
                                     interactions = object$interactions,
                                     structural_model = object$smMatrix,
-                                    inner_weights = object$inner_weights)
-  actual_star <- fullmodel$construct_scores[rownames(testData),]
+                                    inner_weights = object$inner_weights))
+  actual_star <- fullmodel$construct_scores
 
   #Extract Measurements needed for Predictions
   normData <- testData[,object$mmVariables]
@@ -41,7 +43,7 @@ predict.seminr_model <- function(object, testData, technique = predict_DA, na.pr
                          predicted_items = predictedMeasurements[,object$mmVariables],
                          item_residuals = residuals,
                          predicted_composite_scores = predicted_construct_scores,
-                         composite_residuals = (actual_star - predicted_construct_scores),
+                         composite_residuals = (actual_star[rownames(testData),] - predicted_construct_scores),
                          actual_star = actual_star)
 
   class(predictResults) <- "PLSprediction"
