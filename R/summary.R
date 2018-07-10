@@ -13,7 +13,7 @@ summary.composite_evaluation <- function(object, na.print=".", digits=3, ...) {
                         accuracy_matrix = object$composite_accuracy$evaluation_matrix,
                         validity_matrix = object$composite_validity$evaluation_matrix,
                         validity_lm = object$composite_validity$linear_model,
-                        inflential_cases = object$composite3_validity$influential_cases)
+                        inflential_cases = object$composite_validity$influential_cases)
   class(model_summary) <- "summary.composite_evaluation"
   return(model_summary)
 }

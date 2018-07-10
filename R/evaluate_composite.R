@@ -7,7 +7,7 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
   order <- sample(nrow(model$data),nrow(model$data), replace = FALSE)
   ordered_data <- model$data[order,]
 
-  #Create 10 equally sized folds
+  #Create noFolds equally sized folds
   folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
 
   # collect in-sample and out-sample prediction matrices
