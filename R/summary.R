@@ -1,5 +1,44 @@
 # Summary method for PLSpredict
 #' @export
+summary.PLSprediction <- function(object, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(object, "PLSprediction"))
+  # calculate RMSE and MAD
+  item_metrics <- apply(object$item_residuals,2, prediction_metrics)
+  composite_metrics <- apply(object$composite_residuals, 2, prediction_metrics)
+  rownames(item_metrics) <- rownames(composite_metrics) <- c("RMSE","MAD")
+  # prepare return object with class
+  PLSprediction_summary <- list(predicted_items = object$predicted_items,
+                                predicted_composite_scores = object$predicted_composite_scores,
+                                item_predictive_metrics = item_metrics,
+                                composite_predictive_metrics = composite_metrics)
+  class(PLSprediction_summary) <- "summary.PLSprediction"
+  return(PLSprediction_summary)
+}
+
+# Function to print summary of PLSpredict
+#' @export
+print.summary.PLSprediction <- function(x, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(x, "summary.PLSprediction"))
+  cat("Summary of PLS Prediction\n")
+  cat("Item Predictions:\n")
+  print(x$predicted_items, digits = digits, na.print = na.print)
+  cat("\nItem Predictive Metrics:\n")
+  print(x$item_predictive_metrics, digits = digits, na.print = na.print)
+  cat("\nComposite Predictions:\n")
+  print(x$predicted_composite_scores, digits = digits, na.print = na.print)
+  cat("\nComposite Predictive Metrics:\n")
+  print(x$composite_predictive_metrics, digits = digits, na.print = na.print)
+  cat("\n")
+  invisible(x)
+}
+
+
+
+
+
+#' @export
 summary.composite_evaluation <- function(object, na.print=".", digits=3, ...) {
 
   stopifnot(inherits(object, "composite_evaluation"))

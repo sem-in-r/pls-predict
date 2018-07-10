@@ -97,7 +97,7 @@ validatePredict <- function(model, technique = predict_DA, noFolds=10){
 
     #Initialize PLS residuals and actuals holder matrices
     PLSactuals <- testHolder$testData[,targets]
-    PLSresiduals <- testHolder$residuals[,targets]
+    PLSresiduals <- testHolder$item_residuals[,targets]
 
     #Initialize lm residuals and actuals holder matrices
     lmprediction <- matrix(0,nrow=length(testIndexes),ncol=length(targets),byrow =TRUE,dimnames = list(1:length(testIndexes),targets))

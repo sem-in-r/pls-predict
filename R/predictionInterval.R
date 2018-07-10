@@ -85,7 +85,7 @@ predictionInterval <- function(model, testData, technique = predict_DA, PIprobs 
                                   testData = testData,
                                   technique = technique)
 
-      return(as.matrix(cbind(testModel$predicted_Measurements,testModel$residuals)))
+      return(as.matrix(cbind(testModel$predicted_items,testModel$item_residuals)))
     }
 
     utils::capture.output(bootmatrix <- parallel::parSapply(cl,1:noBoots,getEstimateResults, d))

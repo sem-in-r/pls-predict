@@ -85,13 +85,13 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
                                      testData = testingData,
                                      technique = technique)
 
-  PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_CompositeScores
+  PLS_predicted_outsample[testIndexes,] <-  test_predictions$predicted_composite_scores
 
   #PLS prediction on trainset model
   train_predictions <- stats::predict(object = train_model,
                                       testData = trainingData,
                                       technique = technique)
-  PLS_predicted_insample[trainIndexes,] <- train_predictions$predicted_CompositeScores
+  PLS_predicted_insample[trainIndexes,] <- train_predictions$predicted_composite_scores
   return(list(PLS_predicted_insample = PLS_predicted_insample,
          PLS_predicted_outsample = PLS_predicted_outsample))
 }
@@ -119,3 +119,9 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
               in_sample = average_insample))
 }
 
+# Function to return the RMSE and MAE of a score
+prediction_metrics <- function(residuals) {
+  RMSE <- sqrt(mean(residuals^2))
+  MAE <- mean(abs(residuals))
+  return(matrix(c(RMSE,MAE), nrow = 2, ncol = 1, byrow = TRUE))
+}

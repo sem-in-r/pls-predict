@@ -20,10 +20,10 @@ mobi_sm <- relationships(
 
 # Load data, assemble model, and estimate using semPLS
 mobi <- mobi
-seminr_model <- seminr::estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
-metrics_DA <- validatePredict(seminr_model,
+utils::capture.output(seminr_model <- seminr::estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting))
+utils::capture.output(metrics_DA <- validatePredict(seminr_model,
                               technique = predict_DA,
-                              noFolds = 10)
+                              noFolds = 10))
 
 
 ## Output originally created using following lines
@@ -81,9 +81,9 @@ context("PLSpredict correctly calculates the PLS and LM metrics EA technique\n")
 # Test cases
 ## EA Approach
 
-metrics_EA <- validatePredict(seminr_model,
+utils::capture.output(metrics_EA <- validatePredict(seminr_model,
                               technique = predict_EA,
-                              noFolds = 10)
+                              noFolds = 10))
 
 
 ## Output originally created using following lines
