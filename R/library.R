@@ -73,10 +73,10 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   trainingData <- ordered_data[-testIndexes, ]
 
   # Create matrices for return data
-  PLS_predicted_outsample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
-  PLS_predicted_insample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(1:nrow(ordered_data),model$constructs))
-  PLS_predicted_outsample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(1:nrow(ordered_data),model$mmVariables))
-  PLS_predicted_insample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(1:nrow(ordered_data),model$mmVariables))
+  PLS_predicted_outsample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(rownames(ordered_data),model$constructs))
+  PLS_predicted_insample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(rownames(ordered_data),model$constructs))
+  PLS_predicted_outsample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
+  PLS_predicted_insample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
 
   #PLS prediction on testset model
   utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
@@ -95,12 +95,38 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   train_predictions <- stats::predict(object = train_model,
                                       testData = trainingData,
                                       technique = technique)
+
   PLS_predicted_insample_construct[trainIndexes,] <- train_predictions$predicted_composite_scores
   PLS_predicted_insample_item[trainIndexes,] <- train_predictions$predicted_items
+
+  ## Perform prediction on LM models for benchmark
+  # Identify endogenous items
+  endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
+  #
+  # #Initialize lm predictions matrix
+  lmprediction_out_sample <- matrix(0,nrow=nrow(ordered_data),ncol=length(endogenous_items),byrow =TRUE,dimnames = list(rownames(ordered_data),endogenous_items))
+  lmprediction_in_sample <- matrix(0,nrow=nrow(ordered_data),ncol=length(endogenous_items),byrow =TRUE,dimnames = list(rownames(ordered_data),endogenous_items))
+
+  #LM Matrices
+  lm_holder <- sapply(unique(model$smMatrix[,2]), generate_lm_predictions, model = model,
+                          ordered_data = ordered_data,
+                          testIndexes = testIndexes,
+                          endogenous_items = endogenous_items,
+                          trainIndexes = trainIndexes)
+
+  lmprediction_in_sample <- matrix(0, ncol = 0 , nrow = length(trainIndexes))
+  lmprediction_out_sample <- matrix(0, ncol = 0 , nrow = length(testIndexes))
+
+  # collect the odd and even numbered matrices from the matrices return object
+  lmprediction_in_sample <- do.call(cbind, lm_holder[((1:(length(unique(model$smMatrix[,2]))*2))[1:(length(unique(model$smMatrix[,2]))*2)%%2==1])])
+  lmprediction_out_sample <- do.call(cbind, lm_holder[((1:(length(unique(model$smMatrix[,2]))*2))[1:(length(unique(model$smMatrix[,2]))*2)%%2==0])])
+
   return(list(PLS_predicted_insample = PLS_predicted_insample_construct,
          PLS_predicted_outsample = PLS_predicted_outsample_construct,
          PLS_predicted_insample_item = PLS_predicted_insample_item,
-         PLS_predicted_outsample_item = PLS_predicted_outsample_item))
+         PLS_predicted_outsample_item = PLS_predicted_outsample_item,
+         LM_predicted_insample_item = lmprediction_in_sample,
+         LM_predicted_outsample_item = lmprediction_out_sample))
 }
 
 # Function to collect and parse prediction matrices
@@ -108,10 +134,12 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   # create prediction matrices
   matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
   # collect the odd and even numbered matrices from the matrices return object
-  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==1]])
-  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==2]])
-  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==3]])
-  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*4))[1:(noFolds*4)%%4==0]])
+  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==1]])
+  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==2]])
+  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==3]])
+  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==4]])
+  in_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==5]])
+  out_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==0]])
 
   # mean the in-sample construct predictions by row
   average_insample_construct <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_construct_matrix,
@@ -132,15 +160,30 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   average_outsample_item <- sapply(1:length(model$mmVariables), sum_rows, matrix = out_sample_item_matrix,
                                         noFolds = noFolds,
                                         constructs = model$mmVariables)
+  # Collect endogenous items
+  endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
 
+  # mean the in-sample lm predictions by row
+  average_insample_lm <- sapply(1:length(endogenous_items), mean_rows, matrix = in_sample_lm_matrix,
+                                noFolds = noFolds,
+                                constructs = endogenous_items)
+
+  # sum the out-sample item predictions by row
+  average_outsample_lm <- sapply(1:length(endogenous_items), sum_rows, matrix = out_sample_lm_matrix,
+                                   noFolds = noFolds,
+                                   constructs = endogenous_items)
 
 
   colnames(average_insample_construct) <- colnames(average_outsample_construct) <- model$constructs
+  colnames(average_insample_item) <- colnames(average_outsample_item) <- model$mmVariables
+  colnames(average_insample_lm) <- colnames(average_outsample_lm) <- endogenous_items
 
   return(list(out_of_sample_construct = average_outsample_construct,
               in_sample_construct = average_insample_construct,
               out_of_sample_item = average_outsample_item,
-              in_sample_item = average_insample_item))
+              in_sample_item = average_insample_item,
+              out_of_sample_lm_item = average_outsample_lm,
+              in_sample_lm_item = average_insample_lm))
 }
 
 # Function to return the RMSE and MAE of a score
@@ -148,4 +191,46 @@ prediction_metrics <- function(residuals) {
   RMSE <- sqrt(mean(residuals^2))
   MAE <- mean(abs(residuals))
   return(matrix(c(RMSE,MAE), nrow = 2, ncol = 1, byrow = TRUE))
+}
+
+predict_lm_matrices <- function(x, depTrainData, indepTrainData,indepTestData, endogenous_items) {
+  # Train LM
+  trainLM <- stats::lm(depTrainData[,x] ~ ., indepTrainData)
+  # Predict out of sample
+  lmprediction_out_sample <- stats::predict(trainLM, newdata = indepTestData)
+  # Predict in sample
+  lmprediction_in_sample <- stats::predict(trainLM, newdata = indepTrainData)
+  return(list(lm_prediction_in_sample = lmprediction_in_sample,
+              lm_prediction_out_sample = lmprediction_out_sample))
+}
+
+generate_lm_predictions <- function(x, model, ordered_data, testIndexes, endogenous_items, trainIndexes) {
+  # Extract the target and non-target variables for Linear Model
+  dependant_items <- model$mmMatrix[model$mmMatrix[,1] == x,2]
+
+  # Create matrix return object holders
+  in_sample_matrix <- matrix(0,nrow = nrow(ordered_data), ncol = length(dependant_items), dimnames = list(rownames(ordered_data),dependant_items))
+  out_sample_matrix <- matrix(0,nrow = nrow(ordered_data), ncol = length(dependant_items), dimnames = list(rownames(ordered_data),dependant_items))
+
+  # Exclude dependant items from independant matrix
+  independant_matrix <- ordered_data[ , -which(names(ordered_data) %in% dependant_items)]
+  dependant_matrix <- as.matrix(ordered_data[,dependant_items])
+
+  # Create independant items matrices - training and testing
+  indepTestData <- independant_matrix[testIndexes, ]
+  indepTrainData <- independant_matrix[-testIndexes, ]
+
+  # Create dependant matrices - training and testing
+  depTestData <- as.matrix(dependant_matrix[testIndexes, ])
+  depTrainData <- as.matrix(dependant_matrix[-testIndexes, ])
+  colnames(depTrainData) <- colnames(depTestData) <- dependant_items
+
+  lm_prediction_list <- sapply(dependant_items, predict_lm_matrices, depTrainData = depTrainData,
+                               indepTrainData = indepTrainData,
+                               indepTestData = indepTestData,
+                               endogenous_items = endogenous_items)
+  in_sample_matrix[trainIndexes,] <- matrix(unlist(lm_prediction_list[(1:length(lm_prediction_list))[1:length(lm_prediction_list)%%2==1]]), ncol = length(dependant_items), nrow = nrow(depTrainData), dimnames = list(rownames(depTrainData),dependant_items))
+  out_sample_matrix[testIndexes,] <- matrix(unlist(lm_prediction_list[(1:length(lm_prediction_list))[1:length(lm_prediction_list)%%2==0]]), ncol = length(dependant_items), nrow = nrow(depTestData), dimnames = list(rownames(depTestData),dependant_items))
+
+  return(list(in_sample_matrix, out_sample_matrix))
 }

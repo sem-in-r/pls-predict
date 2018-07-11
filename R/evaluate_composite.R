@@ -1,6 +1,6 @@
 
 #' @export
-kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
+predict_pls <- function(model, technique = predict_DA, noFolds = 10) {
 
   stopifnot(inherits(model, "seminr_model"))
   # shuffle data
@@ -14,13 +14,18 @@ kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
   pred_matrices <- prediction_matrices(folds, noFolds, ordered_data, model,technique)
   PLS_predicted_outsample_construct <- pred_matrices$out_of_sample_construct
   PLS_predicted_insample_construct <- pred_matrices$in_sample_construct
-
-  # assign the correct (randomized) rownumbers
-  rownames(PLS_predicted_outsample_construct) <- rownames(PLS_predicted_insample_construct) <- order
+  PLS_predicted_outsample_item <- pred_matrices$out_of_sample_item
+  PLS_predicted_insample_item <- pred_matrices$in_sample_item
+  LM_predicted_outsample_item <- pred_matrices$out_of_sample_lm_item
+  LM_predicted_insample_item <- pred_matrices$in_sample_lm_item
 
   results <- list(composite_out_of_sample = PLS_predicted_outsample_construct,
                   composite_in_sample = PLS_predicted_insample_construct,
-                  actuals_star = model$construct_scores[order,])
+                  actuals_star = model$construct_scores[order,],
+                  item_out_of_sample = PLS_predicted_outsample_item,
+                  item_in_sample = PLS_predicted_insample_item,
+                  lm_out_of_sample = LM_predicted_outsample_item,
+                  lm_in_sample = LM_predicted_insample_item)
   class(results) <- "kfold_predictions"
   return(results)
 }

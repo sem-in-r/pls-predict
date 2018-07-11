@@ -25,11 +25,11 @@ utils::capture.output(mobi_pls <- seminr::estimate_pls(data = mobi,
                                  measurement_model = mobi_mm,
                                  structural_model = mobi_sm))
 
-utils::capture.output(pred_mobi_pls_EA <- kfold_predict(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_EA <- predict_pls(model = mobi_pls,
                                       technique = predict_EA,
                                       noFolds = 10))
 
-utils::capture.output(pred_mobi_pls_DA <- kfold_predict(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_DA <- predict_pls(model = mobi_pls,
                                          technique = predict_DA,
                                          noFolds = 10))
 

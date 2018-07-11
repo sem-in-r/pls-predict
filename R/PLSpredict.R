@@ -44,7 +44,7 @@ predict.seminr_model <- function(object, testData, technique = predict_DA, na.pr
                          item_residuals = residuals,
                          predicted_composite_scores = predicted_construct_scores,
                          composite_residuals = (actual_star[rownames(testData),] - predicted_construct_scores),
-                         actual_star = actual_star)
+                         actual_star = actual_star[rownames(testData),])
 
   class(predictResults) <- "PLSprediction"
   return(predictResults)
