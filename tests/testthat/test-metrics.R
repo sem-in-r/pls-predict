@@ -1,4 +1,4 @@
-context("PLSpredict correctly calculates the PLS and LM metrics DA technique\n")
+context("PLSpredict correctly calculates the PLS and LM metrics DA and EA technique\n")
 
 # Test cases
 ## DA Approach
@@ -18,120 +18,122 @@ mobi_sm <- relationships(
         from = c("Image", "Expectation", "Value"))
 )
 
-# Load data, assemble model, and estimate using semPLS
+# Load data, assemble model, and estimate using PLSpredict
 mobi <- mobi
 utils::capture.output(seminr_model <- seminr::estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting))
-utils::capture.output(metrics_DA <- validatePredict(seminr_model,
-                              technique = predict_DA,
-                              noFolds = 10))
+utils::capture.output(pred_mobi_pls_DA <- predict_pls(seminr_model,
+                                                      technique = predict_DA,
+                                                      noFolds = 10))
 
+utils::capture.output(pred_mobi_pls_EA <- predict_pls(seminr_model,
+                                                      technique = predict_EA,
+                                                      noFolds = 10))
 
-## Output originally created using following lines
-#write.csv(metrics_DA, file = "tests/fixtures/metrics_DA.csv")
+pred_sum_DA <- summary(pred_mobi_pls_DA, construct = "Satisfaction")
+pred_sum_EA <- summary(pred_mobi_pls_EA, construct = "Satisfaction")
 
-# Load controls
-metrics_DA_control <- as.matrix(read.csv("../fixtures/metrics_DA.csv", row.names = 1))
-
-# Testing
-
-test_that("PLSpredict calculates the PLS RMSE correctly", {
-  diff <- abs(metrics_DA$PLSRMSE - metrics_DA_control[,1:3])/metrics_DA$PLSRMSE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-test_that("PLSpredict calculates the LM RMSE correctly", {
-  diff <- abs(metrics_DA$LMRMSE - metrics_DA_control[,10:12])/metrics_DA$LMRMSE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-test_that("PLSpredict calculates the PLS MAPE correctly", {
-  diff <- abs(metrics_DA$PLSMAPE - metrics_DA_control[,4:6])/metrics_DA$PLSMAPE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-test_that("PLSpredict calculates the LM MAPE correctly", {
-  diff <- abs(metrics_DA$LMMAPE - metrics_DA_control[,13:15])/metrics_DA$LMMAPE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-test_that("PLSpredict calculates the PLS MAD correctly", {
-  diff <- abs(metrics_DA$PLSMAD - metrics_DA_control[,7:9])/metrics_DA$PLSMAD
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-test_that("PLSpredict calculates the LM MAD correctly", {
-  diff <- abs(metrics_DA$LMMAD - metrics_DA_control[,16:18])/metrics_DA$LMMAD
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
-})
-
-context("PLSpredict correctly calculates the PLS and LM metrics EA technique\n")
-
-# Test cases
-## EA Approach
-
-utils::capture.output(metrics_EA <- validatePredict(seminr_model,
-                              technique = predict_EA,
-                              noFolds = 10))
-
+# Collect data to be tested
+DA_item_metrics <- pred_sum_DA$item_evaluation
 
 ## Output originally created using following lines
-#write.csv(metrics_EA, file = "tests/fixtures/metrics_EA.csv")
+# write.csv(pred_sum_DA$item_evaluation, file = "tests/fixtures/item_metrics_DA.csv")
+# write.csv(pred_sum_EA$item_evaluation, file = "tests/fixtures/item_metrics_EA.csv")
+# write.csv(c(pred_sum_DA$composite_accuracy$IS_RMSE,
+#             pred_sum_DA$composite_accuracy$OOS_RMSE,
+#             pred_sum_DA$composite_accuracy$IS_MAE,
+#             pred_sum_DA$composite_accuracy$OOS_MAE), file = "tests/fixtures/composite_accuracy_DA.csv")
+# write.csv(c(pred_sum_EA$composite_accuracy$IS_RMSE,
+#             pred_sum_EA$composite_accuracy$OOS_RMSE,
+#             pred_sum_EA$composite_accuracy$IS_MAE,
+#             pred_sum_EA$composite_accuracy$OOS_MAE), file = "tests/fixtures/composite_accuracy_EA.csv")
+# write.csv(c(pred_sum_DA$composite_accuracy$outliers,
+#             pred_sum_EA$composite_accuracy$outliers), file = "tests/fixtures/outliers.csv")
+# write.csv(pred_sum_DA$composite_validity$influential_cases, file = "tests/fixtures/influential_DA")
+# write.csv(pred_sum_EA$composite_validity$influential_cases, file = "tests/fixtures/influential_EA")
+# write.csv(pred_sum_DA$composite_validity$linear_model$coefficients, file = "tests/fixtures/lm_coefficients_DA")
+# write.csv(pred_sum_EA$composite_validity$linear_model$coefficients, file = "tests/fixtures/lm_coefficients_EA")
 
 # Load controls
-metrics_EA_control <- as.matrix(read.csv("../fixtures/metrics_EA.csv", row.names = 1))
+DA_item_metrics_control <- as.matrix(read.csv("../fixtures/item_metrics_DA.csv", row.names = 1))
+EA_item_metrics_control <- as.matrix(read.csv("../fixtures/item_metrics_EA.csv", row.names = 1))
+DA_composite_accuracy_control <- as.matrix(read.csv("../fixtures/composite_accuracy_DA.csv", row.names = 1))
+EA_composite_accuracy_control <- as.matrix(read.csv("../fixtures/composite_accuracy_EA.csv", row.names = 1))
+outliers_control <- as.matrix(read.csv("../fixtures/outliers.csv", row.names = 1))
+influential_cases_DA_control <- as.matrix(read.csv("../fixtures/influential_DA", row.names = 1))
+influential_cases_EA_control <- as.matrix(read.csv("../fixtures/influential_EA", row.names = 1))
+lm_coefficients_DA_control <- as.matrix(read.csv("../fixtures/lm_coefficients_DA", row.names = 1))
+lm_coefficients_EA_control <- as.matrix(read.csv("../fixtures/lm_coefficients_EA", row.names = 1))
 
 # Testing
-
-test_that("PLSpredict calculates the PLS RMSE correctly", {
-  diff <- abs(metrics_EA$PLSRMSE - metrics_EA_control[,1:3])/metrics_EA$PLSRMSE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the PLS item RMSE & MAD IS correctly - DA", {
+  diff <- mean(abs(pred_sum_DA$item_evaluation$PLS_item_predictive_metrics_IS - DA_item_metrics_control[1:2,1:13])/pred_sum_DA$item_evaluation$PLS_item_predictive_metrics_IS)
+  expect_lt(diff, 0.02)
 })
 
-test_that("PLSpredict calculates the LM RMSE correctly", {
-  diff <- abs(metrics_EA$LMRMSE - metrics_EA_control[,10:12])/metrics_EA$LMRMSE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the PLS item RMSE & MAD IS correctly - EA", {
+  diff <- mean(abs(pred_sum_EA$item_evaluation$PLS_item_predictive_metrics_IS - EA_item_metrics_control[1:2,1:13])/pred_sum_EA$item_evaluation$PLS_item_predictive_metrics_IS)
+  expect_lt(diff, 0.02)
 })
 
-test_that("PLSpredict calculates the PLS MAPE correctly", {
-  diff <- abs(metrics_EA$PLSMAPE - metrics_EA_control[,4:6])/metrics_EA$PLSMAPE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the PLS item RMSE & MAD OOS correctly - DA", {
+  diff <- mean(abs(pred_sum_DA$item_evaluation$PLS_item_predictive_metrics_OOS - DA_item_metrics_control[1:2,14:26])/pred_sum_DA$item_evaluation$PLS_item_predictive_metrics_OOS)
+  expect_lt(diff, 0.02)
 })
 
-test_that("PLSpredict calculates the LM MAPE correctly", {
-  diff <- abs(metrics_EA$LMMAPE - metrics_EA_control[,13:15])/metrics_EA$LMMAPE
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the PLS item RMSE & MAD OOS correctly - EA", {
+  diff <- mean(abs(pred_sum_EA$item_evaluation$PLS_item_predictive_metrics_OOS - EA_item_metrics_control[1:2,14:26])/pred_sum_EA$item_evaluation$PLS_item_predictive_metrics_OOS)
+  expect_lt(diff, 0.02)
 })
 
-test_that("PLSpredict calculates the PLS MAD correctly", {
-  diff <- abs(metrics_EA$PLSMAD - metrics_EA_control[,7:9])/metrics_EA$PLSMAD
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the LM item RMSE & MAD IS correctly - DA", {
+  diff <- mean(abs(pred_sum_DA$item_evaluation$LM_item_predictive_metrics_IS - DA_item_metrics_control[1:2,27:29])/pred_sum_DA$item_evaluation$LM_item_predictive_metrics_IS)
+  expect_lt(diff, 0.02)
 })
 
-test_that("PLSpredict calculates the LM MAD correctly", {
-  diff <- abs(metrics_EA$LMMAD - metrics_EA_control[,16:18])/metrics_EA$LMMAD
-  expect_lt(diff[[1]], 0.05)
-  expect_lt(diff[[2]], 0.05)
-  expect_lt(diff[[3]], 0.05)
+test_that("PLSpredict calculates the LM item RMSE & MAD IS correctly - EA", {
+  diff <- mean(abs(pred_sum_EA$item_evaluation$LM_item_predictive_metrics_IS - EA_item_metrics_control[1:2,27:29])/pred_sum_EA$item_evaluation$LM_item_predictive_metrics_IS)
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the LM item RMSE & MAD OOS correctly - DA", {
+  diff <- mean(abs(pred_sum_DA$item_evaluation$LM_item_predictive_metrics_OOS - DA_item_metrics_control[1:2,30:32])/pred_sum_DA$item_evaluation$LM_item_predictive_metrics_OOS)
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the LM item RMSE & MAD OOS correctly - EA", {
+  diff <- mean(abs(pred_sum_EA$item_evaluation$LM_item_predictive_metrics_OOS - EA_item_metrics_control[1:2,30:32])/pred_sum_EA$item_evaluation$LM_item_predictive_metrics_OOS)
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the PLS composite RMSE & MAD OOS correctly - DA", {
+  diff <- mean(DA_composite_accuracy_control - c(pred_sum_DA$composite_accuracy$IS_RMSE, pred_sum_DA$composite_accuracy$OOS_RMSE, pred_sum_DA$composite_accuracy$IS_MAE, pred_sum_DA$composite_accuracy$OOS_MAE))
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the PLS composite RMSE & MAD OOS correctly - EA", {
+  diff <- mean(EA_composite_accuracy_control - c(pred_sum_EA$composite_accuracy$IS_RMSE, pred_sum_EA$composite_accuracy$OOS_RMSE, pred_sum_EA$composite_accuracy$IS_MAE, pred_sum_EA$composite_accuracy$OOS_MAE))
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the PLS outliers correctly - DA & EA", {
+  diff = sum(as.numeric(c(pred_sum_DA$composite_accuracy$outliers, pred_sum_EA$composite_accuracy$outliers)) - outliers_control)
+  expect_equal(diff, 0)
+})
+
+test_that("PLSpredict calculates the PLS influential cases correctly - DA", {
+  expect_equal(influential_cases_DA_control, as.matrix(pred_sum_DA$composite_validity$influential_cases))
+})
+
+test_that("PLSpredict calculates the PLS influential cases correctly - EA", {
+  expect_equal(influential_cases_EA_control, as.matrix(pred_sum_EA$composite_validity$influential_cases))
+})
+
+test_that("PLSpredict calculates the PLS Validity Coefficients correctly - DA", {
+  diff = mean(lm_coefficients_DA_control - as.matrix(pred_sum_DA$composite_validity$linear_model$coefficients))
+  expect_lt(diff, 0.02)
+})
+
+test_that("PLSpredict calculates the PLS Validity Coefficients correctly - EA", {
+  diff = mean(lm_coefficients_EA_control - as.matrix(pred_sum_EA$composite_validity$linear_model$coefficients))
+  expect_lt(diff, 0.02)
 })

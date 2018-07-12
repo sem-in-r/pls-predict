@@ -67,15 +67,6 @@ PIntervals <- predictionInterval(model = mobi_pls_train,
                                  PIprobs = 0.95,
                                  noBoots = 500)
 
-#Call validatepredict
-predictionMetrics <- validatePredict(mobi_pls, technique = predict_DA, noFolds=10)
-predictionMetrics$PLSRMSE
-predictionMetrics$LMRMSE
-predictionMetrics$PLSMAPE
-predictionMetrics$LMMAPE
-predictionMetrics$PLSMAD
-predictionMetrics$LMMAD
-
 # Visualization of Prediction Intervals
 ##Create Holders & assign PI data
 aveCUSL1 <- PIntervals$averageCasePI[["CUSL1"]]
