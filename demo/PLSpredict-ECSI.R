@@ -34,14 +34,16 @@ mobi_pls <- estimate_pls(data = mobi,
 
 
 # Generating predictions for the full model - k-fold
-pred_mobi_pls <- kfold_predict(mobi_pls,
-                               technique = predict_DA,
-                               noFolds = 10)
+pred_mobi_pls <- predict_pls(mobi_pls,
+                             technique = predict_DA,
+                             noFolds = 10)
 
-pred_eval <- evaluate_composite(pred_mobi_pls, "Loyalty")
-
-pred_sum <- summary(pred_eval)
+pred_sum <- summary(pred_mobi_pls)
 print(pred_sum)
+pred_sum <- summary(pred_mobi_pls, construct = "Loyalty")
+print(pred_sum)
+
+
 plot(pred_eval)
 plot(pred_sum)
 

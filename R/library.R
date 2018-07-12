@@ -77,7 +77,7 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   PLS_predicted_insample_construct <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$constructs),dimnames = list(rownames(ordered_data),model$constructs))
   PLS_predicted_outsample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
   PLS_predicted_insample_item <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
-
+  PLS_predicted_insample_item_residuals <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
   #PLS prediction on testset model
   utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
                                       measurement_model = model$mmMatrix,
@@ -91,6 +91,7 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   PLS_predicted_outsample_construct[testIndexes,] <-  test_predictions$predicted_composite_scores
   PLS_predicted_outsample_item[testIndexes,] <- test_predictions$predicted_items
 
+
   #PLS prediction on trainset model
   train_predictions <- stats::predict(object = train_model,
                                       testData = trainingData,
@@ -98,14 +99,11 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 
   PLS_predicted_insample_construct[trainIndexes,] <- train_predictions$predicted_composite_scores
   PLS_predicted_insample_item[trainIndexes,] <- train_predictions$predicted_items
+  PLS_predicted_insample_item_residuals[trainIndexes,] <- as.matrix(train_predictions$item_residuals)
 
   ## Perform prediction on LM models for benchmark
   # Identify endogenous items
   endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
-  #
-  # #Initialize lm predictions matrix
-  lmprediction_out_sample <- matrix(0,nrow=nrow(ordered_data),ncol=length(endogenous_items),byrow =TRUE,dimnames = list(rownames(ordered_data),endogenous_items))
-  lmprediction_in_sample <- matrix(0,nrow=nrow(ordered_data),ncol=length(endogenous_items),byrow =TRUE,dimnames = list(rownames(ordered_data),endogenous_items))
 
   #LM Matrices
   lm_holder <- sapply(unique(model$smMatrix[,2]), generate_lm_predictions, model = model,
@@ -116,17 +114,21 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 
   lmprediction_in_sample <- matrix(0, ncol = 0 , nrow = length(trainIndexes))
   lmprediction_out_sample <- matrix(0, ncol = 0 , nrow = length(testIndexes))
+  lmprediction_in_sample_residuals <- matrix(0,nrow=nrow(ordered_data),ncol=length(endogenous_items),byrow =TRUE,dimnames = list(rownames(ordered_data),endogenous_items))
 
   # collect the odd and even numbered matrices from the matrices return object
   lmprediction_in_sample <- do.call(cbind, lm_holder[((1:(length(unique(model$smMatrix[,2]))*2))[1:(length(unique(model$smMatrix[,2]))*2)%%2==1])])
   lmprediction_out_sample <- do.call(cbind, lm_holder[((1:(length(unique(model$smMatrix[,2]))*2))[1:(length(unique(model$smMatrix[,2]))*2)%%2==0])])
+  lmprediction_in_sample_residuals[trainIndexes,] <- as.matrix(ordered_data[trainIndexes,endogenous_items]) - lmprediction_in_sample[trainIndexes,endogenous_items]
 
   return(list(PLS_predicted_insample = PLS_predicted_insample_construct,
          PLS_predicted_outsample = PLS_predicted_outsample_construct,
          PLS_predicted_insample_item = PLS_predicted_insample_item,
          PLS_predicted_outsample_item = PLS_predicted_outsample_item,
          LM_predicted_insample_item = lmprediction_in_sample,
-         LM_predicted_outsample_item = lmprediction_out_sample))
+         LM_predicted_outsample_item = lmprediction_out_sample,
+         PLS_predicted_insample_item_residuals = PLS_predicted_insample_item_residuals,
+         LM_predicted_insample_item_residuals = lmprediction_in_sample_residuals))
 }
 
 # Function to collect and parse prediction matrices
@@ -134,12 +136,14 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   # create prediction matrices
   matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
   # collect the odd and even numbered matrices from the matrices return object
-  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==1]])
-  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==2]])
-  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==3]])
-  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==4]])
-  in_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==5]])
-  out_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*6))[1:(noFolds*6)%%6==0]])
+  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==1]])
+  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==2]])
+  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==3]])
+  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==4]])
+  in_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==5]])
+  out_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==6]])
+  PLS_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==7]])
+  LM_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==0]])
 
   # mean the in-sample construct predictions by row
   average_insample_construct <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_construct_matrix,
@@ -160,6 +164,11 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
   average_outsample_item <- sapply(1:length(model$mmVariables), sum_rows, matrix = out_sample_item_matrix,
                                         noFolds = noFolds,
                                         constructs = model$mmVariables)
+
+  # square the out-sample pls residuals, mean them and take the square root
+  average_insample_pls_item_residuals <- sqrt(sapply(1:length(model$mmVariables), mean_rows, matrix = PLS_in_sample_item_residuals^2,
+                                                 noFolds = noFolds,
+                                                 constructs = model$mmVariables))
   # Collect endogenous items
   endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
 
@@ -173,17 +182,23 @@ prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
                                    noFolds = noFolds,
                                    constructs = endogenous_items)
 
+  # square the out-sample lm residuals, mean them, and take square root
+  average_insample_lm_item_residuals <- sqrt(sapply(1:length(endogenous_items), mean_rows, matrix = LM_in_sample_item_residuals^2,
+                                                     noFolds = noFolds,
+                                                     constructs = endogenous_items))
 
   colnames(average_insample_construct) <- colnames(average_outsample_construct) <- model$constructs
-  colnames(average_insample_item) <- colnames(average_outsample_item) <- model$mmVariables
-  colnames(average_insample_lm) <- colnames(average_outsample_lm) <- endogenous_items
+  colnames(average_insample_item) <- colnames(average_insample_pls_item_residuals) <- colnames(average_outsample_item) <- model$mmVariables
+  colnames(average_insample_lm) <- colnames(average_outsample_lm) <- colnames(average_insample_lm_item_residuals) <- endogenous_items
 
   return(list(out_of_sample_construct = average_outsample_construct,
               in_sample_construct = average_insample_construct,
               out_of_sample_item = average_outsample_item,
               in_sample_item = average_insample_item,
               out_of_sample_lm_item = average_outsample_lm,
-              in_sample_lm_item = average_insample_lm))
+              in_sample_lm_item = average_insample_lm,
+              pls_in_sample_item_residuals = average_insample_pls_item_residuals,
+              lm_in_sample_item_residuals = average_insample_lm_item_residuals))
 }
 
 # Function to return the RMSE and MAE of a score

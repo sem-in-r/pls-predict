@@ -34,70 +34,42 @@ print.summary.PLSprediction <- function(x, na.print=".", digits=3, ...) {
   invisible(x)
 }
 
-
-
-
-
 #' @export
-summary.composite_evaluation <- function(object, na.print=".", digits=3, ...) {
+summary.pls_prediction_kfold <- function(object, construct = NULL, na.print=".", digits=3, ...) {
 
-  stopifnot(inherits(object, "composite_evaluation"))
-  # Composite accuracy
-  model_summary <- list(construct = object$construct,
-                        IS_RMSE = object$composite_accuracy$IS_RMSE,
-                        OOS_RMSE = object$composite_accuracy$OOS_RMSE,
-                        IS_MAE = object$composite_accuracy$IS_MAE,
-                        OOS_MAE = object$composite_accuracy$OOS_MAE,
-                        outliers = object$composite_accuracy$outliers,
-                        accuracy_matrix = object$composite_accuracy$evaluation_matrix,
-                        validity_matrix = object$composite_validity$evaluation_matrix,
-                        validity_lm = object$composite_validity$linear_model,
-                        inflential_cases = object$composite_validity$influential_cases)
-  class(model_summary) <- "summary.composite_evaluation"
+  stopifnot(inherits(object, "pls_prediction_kfold"))
+
+  # Composite Evaluation
+  composite_evaluation <- evaluate_composite(object)
+
+  # Item evaluation
+  item_evaluation <- item_metrics(object)
+
+  # If a composite was specified, return that composite, else return all
+  if (is.null(construct)) {construct <- colnames(object$composites$composite_out_of_sample) }
+  composite_accuracy <- composite_evaluation$composite_accuracy[,construct]
+  composite_validity <- composite_evaluation$composite_validity[,construct]
+
+  model_summary <- list(composite_accuracy = composite_accuracy,
+                        composite_validity = composite_validity,
+                        item_evaluation = item_evaluation,
+                        construct = construct)
+  class(model_summary) <- "summary.pls_prediction_kfold"
   return(model_summary)
 }
 
 # Print summary method for PLSpredict
 #' @export
-print.summary.composite_evaluation <- function(x, na.print=".", digits=3, ...) {
+print.summary.pls_prediction_kfold <- function(x, na.print=".", digits=3, ...) {
 
-  stopifnot(inherits(x, "summary.composite_evaluation"))
-  # Composite Accuracy
-  cat("IS RMSE : ")
-  print(x$IS_RMSE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("OOS RMSE : ")
-  print(x$OOS_RMSE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("IS MAE : ")
-  print(x$IS_MAE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("OOS MAE : ")
-  print(x$OOS_MAE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("Outlier Predictions:\n")
-  cat(x$outliers)
-  cat("\n")
+  stopifnot(inherits(x, "summary.pls_prediction_kfold"))
 
-  # Composite Validity
-  cat("\n")
-  cat("Cases with Cook's Distance > 1\n")
-  if (length(rownames(x$validity_matrix[x$validity_matrix$Cook_degree == 3,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 3,]))
-    print(x$validity_matrix[x$validity_matrix$Cook_degree == 3,c(1,2,4)], na.print = na.print, digits=digits)
-  } else {
-    cat("None\n")
-  }
-  cat("Cases with Cook's Distance > 4/n\n")
-  if (length(rownames(x$validity_matrix[x$validity_matrix$Cook_degree == 2,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 2,]))
-    print(x$validity_matrix[x$validity_matrix$Cook_degree == 2,c(1,2,4)], na.print = na.print, digits=digits)
-  } else {
-    cat("None\n")
-  }
-  cat("\n")
-  print(x$validity_lm$coefficients, na.print = na.print, digits=digits)
-  cat("\n")
+  #sapply(x$construct, print_composite_evaluation, object = x)
+
+  # Print the validity and accuracy for each construct
+  for (construct in x$construct) { print_composite_evaluation(construct, x, na.print=".", digits=3) }
+
+  # Print the item metrics PLS & LM
+  print_item_evaluation(x, na.print = na.print, digits = digits)
   invisible(x)
-
 }
