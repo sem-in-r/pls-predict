@@ -94,3 +94,4 @@ plot.summary.composite_evaluation <- function(x,...) {
                       validity_plot = validity_plot)
   invisible(return_list)
 }
+
