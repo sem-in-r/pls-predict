@@ -249,3 +249,19 @@ generate_lm_predictions <- function(x, model, ordered_data, testIndexes, endogen
 
   return(list(in_sample_matrix, out_sample_matrix))
 }
+
+# Function to calculate HPD quantiles from a matrix of predictions
+calculate_hpd_quantiles <- function(mmVariables, testData, bootmatrix, PIprobs) {
+  # subset matrix
+  matrix <- bootmatrix[1:(nrow(testData)*length(mmVariables)), ]
+  # calculate quantiles
+  prediction_intervals <- t(apply(matrix,1, function(x) TeachingDemos::emp.hpd(x,conf = PIprobs)))
+  # rename the rows and columns
+  func <- function(x,testData) {
+    sapply(rownames(testData), function(x,item) paste(item,x,sep = "_"), item = x)
+  }
+  names <- sapply(mmVariables, func, testData = testData)
+  colnames(prediction_intervals) <- c(paste("Lower_",PIprobs*100,"%_bound", sep = ""),paste("Upper_",PIprobs*100,"%_bound", sep = ""))
+  rownames(prediction_intervals) <- as.vector(names)
+  return(prediction_intervals)
+}
