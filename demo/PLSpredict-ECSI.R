@@ -43,9 +43,8 @@ print(pred_sum)
 pred_sum <- summary(pred_mobi_pls, construct = "Loyalty")
 print(pred_sum)
 
-
-plot(pred_eval)
 plot(pred_sum)
+plot(pred_sum, constructs = "Loyalty")
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
