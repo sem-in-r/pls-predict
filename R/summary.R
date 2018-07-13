@@ -1,64 +1,105 @@
 # Summary method for PLSpredict
 #' @export
-summary.composite_evaluation <- function(object, na.print=".", digits=3, ...) {
+summary.PLSprediction <- function(object, na.print=".", digits=3, ...) {
 
-  stopifnot(inherits(object, "composite_evaluation"))
-  # Composite accuracy
-  model_summary <- list(construct = object$construct,
-                        IS_RMSE = object$composite_accuracy$IS_RMSE,
-                        OOS_RMSE = object$composite_accuracy$OOS_RMSE,
-                        IS_MAE = object$composite_accuracy$IS_MAE,
-                        OOS_MAE = object$composite_accuracy$OOS_MAE,
-                        outliers = object$composite_accuracy$outliers,
-                        accuracy_matrix = object$composite_accuracy$evaluation_matrix,
-                        validity_matrix = object$composite_validity$evaluation_matrix,
-                        validity_lm = object$composite_validity$linear_model,
-                        inflential_cases = object$composite_validity$influential_cases)
-  class(model_summary) <- "summary.composite_evaluation"
+  stopifnot(inherits(object, "PLSprediction"))
+  # calculate RMSE and MAD
+  item_metrics <- apply(object$item_residuals,2, prediction_metrics)
+  composite_metrics <- apply(object$composite_residuals, 2, prediction_metrics)
+  rownames(item_metrics) <- rownames(composite_metrics) <- c("RMSE","MAD")
+  # prepare return object with class
+  PLSprediction_summary <- list(predicted_items = object$predicted_items,
+                                predicted_composite_scores = object$predicted_composite_scores,
+                                item_predictive_metrics = item_metrics,
+                                composite_predictive_metrics = composite_metrics)
+  class(PLSprediction_summary) <- "summary.PLSprediction"
+  return(PLSprediction_summary)
+}
+
+# Function to print summary of PLSpredict
+#' @export
+print.summary.PLSprediction <- function(x, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(x, "summary.PLSprediction"))
+  cat("Summary of PLS Prediction\n")
+  cat("Item Predictions:\n")
+  print(x$predicted_items, digits = digits, na.print = na.print)
+  cat("\nItem Predictive Metrics:\n")
+  print(x$item_predictive_metrics, digits = digits, na.print = na.print)
+  cat("\nComposite Predictions:\n")
+  print(x$predicted_composite_scores, digits = digits, na.print = na.print)
+  cat("\nComposite Predictive Metrics:\n")
+  print(x$composite_predictive_metrics, digits = digits, na.print = na.print)
+  cat("\n")
+  invisible(x)
+}
+
+#' @export
+summary.pls_prediction_kfold <- function(object, construct = NULL, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(object, "pls_prediction_kfold"))
+
+  # Composite Evaluation
+  composite_evaluation <- evaluate_composite(object)
+
+  # Item evaluation
+  item_evaluation <- item_metrics(object)
+
+  # If a composite was specified, return that composite, else return all
+  if (is.null(construct)) {construct <- colnames(object$composites$composite_out_of_sample) }
+  composite_accuracy <- composite_evaluation$composite_accuracy[,construct]
+  composite_validity <- composite_evaluation$composite_validity[,construct]
+
+  model_summary <- list(composite_accuracy = composite_accuracy,
+                        composite_validity = composite_validity,
+                        item_evaluation = item_evaluation,
+                        construct = construct)
+  class(model_summary) <- "summary.pls_prediction_kfold"
   return(model_summary)
 }
 
 # Print summary method for PLSpredict
 #' @export
-print.summary.composite_evaluation <- function(x, na.print=".", digits=3, ...) {
+print.summary.pls_prediction_kfold <- function(x, na.print=".", digits=3, ...) {
 
-  stopifnot(inherits(x, "summary.composite_evaluation"))
-  # Composite Accuracy
-  cat("IS RMSE : ")
-  print(x$IS_RMSE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("OOS RMSE : ")
-  print(x$OOS_RMSE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("IS MAE : ")
-  print(x$IS_MAE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("OOS MAE : ")
-  print(x$OOS_MAE, na.print = na.print, digits=digits)
-  cat("\n")
-  cat("Outlier Predictions:\n")
-  cat(x$outliers)
-  cat("\n")
+  stopifnot(inherits(x, "summary.pls_prediction_kfold"))
 
-  # Composite Validity
-  cat("\n")
-  cat("Cases with Cook's Distance > 1\n")
-  if (length(rownames(x$validity_matrix[x$validity_matrix$Cook_degree == 3,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 3,]))
-    print(x$validity_matrix[x$validity_matrix$Cook_degree == 3,c(1,2,4)], na.print = na.print, digits=digits)
-  } else {
-    cat("None\n")
+  #sapply(x$construct, print_composite_evaluation, object = x)
+
+  # Print the validity and accuracy for each construct
+  for (construct in x$construct) { print_composite_evaluation(construct, x, na.print=".", digits=3) }
+
+  # Print the item metrics PLS & LM
+  print_item_evaluation(x, na.print = na.print, digits = digits)
+  invisible(x)
+}
+
+# Summary method for bootstrap_predict
+#' @export
+summary.bootstrap_prediction <- function(object, items = NULL, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(object, "bootstrap_prediction"))
+  # calculate RMSE and MAD
+  bootstrap_prediction_summary <- list(object = object, items = items)
+  class(bootstrap_prediction_summary) <- "summary.bootstrap_prediction"
+  return(bootstrap_prediction_summary)
+}
+
+# Function to print summary of PLSpredict
+#' @export
+print.summary.bootstrap_prediction <- function(x, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(x, "summary.bootstrap_prediction"))
+  ifelse(is.null(x$items), items <- names(x$object$average_case_PI), items <- x$items)
+
+  cat("Average Case Prediction Intervals:\n")
+  for (item in items) {
+    print(x$object$average_case_PI[item])
   }
-  cat("Cases with Cook's Distance > 4/n\n")
-  if (length(rownames(x$validity_matrix[x$validity_matrix$Cook_degree == 2,]))>0) {
-    #cat(rownames(holder[holder$Cook_degree == 2,]))
-    print(x$validity_matrix[x$validity_matrix$Cook_degree == 2,c(1,2,4)], na.print = na.print, digits=digits)
-  } else {
-    cat("None\n")
+  cat("Case Wise Prediction Intervals:\n")
+  for (item in items) {
+    print(x$object$average_case_PI[item])
   }
-  cat("\n")
-  print(x$validity_lm$coefficients, na.print = na.print, digits=digits)
   cat("\n")
   invisible(x)
-
 }
