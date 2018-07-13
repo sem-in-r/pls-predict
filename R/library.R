@@ -256,12 +256,17 @@ calculate_hpd_quantiles <- function(mmVariables, testData, bootmatrix, PIprobs) 
   matrix <- bootmatrix[1:(nrow(testData)*length(mmVariables)), ]
   # calculate quantiles
   prediction_intervals <- t(apply(matrix,1, function(x) TeachingDemos::emp.hpd(x,conf = PIprobs)))
-  # rename the rows and columns
-  func <- function(x,testData) {
-    sapply(rownames(testData), function(x,item) paste(item,x,sep = "_"), item = x)
-  }
-  names <- sapply(mmVariables, func, testData = testData)
-  colnames(prediction_intervals) <- c(paste("Lower_",PIprobs*100,"%_bound", sep = ""),paste("Upper_",PIprobs*100,"%_bound", sep = ""))
-  rownames(prediction_intervals) <- as.vector(names)
-  return(prediction_intervals)
+
+  # # rename the rows and columns and list items
+  named_prediction_intervals <- lapply((1:length(mmVariables) * nrow(testData)), collect_pis, testData, prediction_intervals,PIprobs)
+  names(named_prediction_intervals) <- mmVariables
+  return(named_prediction_intervals)
+}
+
+# Function to collect prediction intervals into list object
+collect_pis <- function(x, testData, prediction_intervals,PIprobs) {
+  PI <- prediction_intervals[(x - nrow(testData)+1):x,1:2]
+  rownames(PI) <- rownames(testData)
+  colnames(PI) <- c(paste("Lower_",PIprobs*100,"%_bound", sep = ""),paste("Upper_",PIprobs*100,"%_bound", sep = ""))
+  return(PI)
 }
