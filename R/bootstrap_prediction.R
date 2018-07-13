@@ -50,15 +50,29 @@ bootstrap_prediction <- function(model, testData, technique = predict_DA, PIprob
     # create cluster
     suppressWarnings(ifelse(is.null(cores), cl <- parallel::makeCluster(parallel::detectCores()), cl <- parallel::makeCluster(cores)))
 
+    # Function to generate random samples with replacement
+    getRandomIndex <- function(d) {return(sample.int(nrow(d),replace = TRUE))}
+
+    # Function to get PLS prediction results
+    getEstimateResults <- function(i, d = d) {
+      utils::capture.output(boot_train <- seminr::estimate_pls(data = d[getRandomIndex(d),],
+                                                               measurement_model,
+                                                               interactions,
+                                                               structural_model,
+                                                               inner_weights))
+      testModel <- stats::predict(object = boot_train,
+                                  testData = testData,
+                                  technique = technique)
+
+      return(as.matrix(cbind(testModel$predicted_items,testModel$item_residuals)))
+    }
+
     # prepare vars for cluster export
     measurement_model <- model$mmMatrix
     interactions <- model$mobi_xm
     structural_model <- model$smMatrix
     inner_weights <- model$inner_weights
     d <- model$rawdata
-
-    # Function to generate random samples with replacement
-    getRandomIndex <- function(d) {return(sample.int(nrow(d),replace = TRUE))}
 
     # Export variables and functions to cluster
     parallel::clusterExport(cl=cl, varlist=c("measurement_model", "interactions", "structural_model",
@@ -83,7 +97,7 @@ bootstrap_prediction <- function(model, testData, technique = predict_DA, PIprob
     casewise_prediction_intervals <- calculate_hpd_quantiles(model$mmVariables, testData, total_casewise_prediction, PIprobs)
 
     # generate point predictions
-    point_predictions <- predict(model, testData, technique = technique)$predicted_items
+    point_predictions <- stats::predict(model, testData, technique = technique)$predicted_items
 
     PIresults <- list(average_case_PI = averagecase_prediction_intervals,
                       case_wise_PI = casewise_prediction_intervals,
@@ -111,16 +125,3 @@ bootstrap_prediction <- function(model, testData, technique = predict_DA, PIprob
  )
 }
 
-# Function to get PLS prediction results
-getEstimateResults <- function(i, d = d) {
-  utils::capture.output(boot_train <- seminr::estimate_pls(data = d[getRandomIndex(d),],
-                                                           measurement_model,
-                                                           interactions,
-                                                           structural_model,
-                                                           inner_weights))
-  testModel <- stats::predict(object = boot_train,
-                              testData = testData,
-                              technique = technique)
-
-  return(as.matrix(cbind(testModel$predicted_items,testModel$item_residuals)))
-}
