@@ -73,3 +73,33 @@ print.summary.pls_prediction_kfold <- function(x, na.print=".", digits=3, ...) {
   print_item_evaluation(x, na.print = na.print, digits = digits)
   invisible(x)
 }
+
+# Summary method for bootstrap_predict
+#' @export
+summary.bootstrap_prediction <- function(object, items = NULL, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(object, "bootstrap_prediction"))
+  # calculate RMSE and MAD
+  bootstrap_prediction_summary <- list(object = object, items = items)
+  class(bootstrap_prediction_summary) <- "summary.bootstrap_prediction"
+  return(bootstrap_prediction_summary)
+}
+
+# Function to print summary of PLSpredict
+#' @export
+print.summary.bootstrap_prediction <- function(x, na.print=".", digits=3, ...) {
+
+  stopifnot(inherits(x, "summary.bootstrap_prediction"))
+  ifelse(is.null(x$items), items <- names(x$object$average_case_PI), items <- x$items)
+
+  cat("Average Case Prediction Intervals:\n")
+  for (item in items) {
+    print(x$object$average_case_PI[item])
+  }
+  cat("Case Wise Prediction Intervals:\n")
+  for (item in items) {
+    print(x$object$average_case_PI[item])
+  }
+  cat("\n")
+  invisible(x)
+}

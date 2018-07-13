@@ -11,6 +11,39 @@ plot.summary.pls_prediction_kfold <- function(x, constructs = NULL, ...) {
   invisible(plots)
 }
 
+#
+#' @export
+plot.summary.bootstrap_prediction <- function(x) {
+  stopifnot(inherits(x, "summary.bootstrap_prediction"))
+  ifelse(is.null(x$items), items <- names(x$object$average_case_PI), items <- x$items)
+
+  plots <- list()
+  for (item in items) {
+    plots[[item]] <- print_prediction_intervals(item, x$object)
+  }
+  invisible(x)
+}
+
+# Function to print prediction intervals plot
+print_prediction_intervals <- function(item, object) {
+
+  ##Create Holders & assign PI data
+  ave_item_PI <- object$average_case_PI[[item]]
+  case_item_PI <- object$case_wise_PI[[item]]
+
+  ##Allocate and sort data - first by actual data and then by predicted data
+  dataholder <- cbind(ave_item_PI,object$point_predictions[,item], object$actuals[,item],case_item_PI )
+  dataholder_sorted <- dataholder[order(dataholder[,4], dataholder[,3]),]
+
+  ### Item PLS Prediction Intervals
+  plot(NULL, xlim = c(1,nrow(dataholder_sorted)), ylim = c(min(dataholder_sorted[,5]),max(dataholder_sorted[,6])), ylab = "Ranges", xlab = "Cases", type = "n", main = paste("PLS Prediction Intervals for item",item))
+  segments(c(1:nrow(dataholder_sorted)),dataholder_sorted[,5],c(1:nrow(dataholder_sorted)),dataholder_sorted[,6], col = 'lightgrey', lwd = 3)
+  segments(c(1:nrow(dataholder_sorted)),dataholder_sorted[,1],c(1:nrow(dataholder_sorted)),dataholder_sorted[,2], col = 'darkgrey', lwd = 3)
+  points(x = c(1:nrow(dataholder_sorted)), y = dataholder_sorted[,4],pch = 21, cex = 0.8, lwd = 2)
+  points(x = c(1:nrow(dataholder_sorted)), y = dataholder_sorted[,3],pch = 20, cex = 0.8)
+
+}
+
 # Function to print composite plots
 print_composite_plots <- function(construct, object) {
   ### PLS Prediction Interval Plot

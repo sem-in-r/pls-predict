@@ -82,8 +82,13 @@ bootstrap_prediction <- function(model, testData, technique = predict_DA, PIprob
     # and calculate quantiles HPD
     casewise_prediction_intervals <- calculate_hpd_quantiles(model$mmVariables, testData, total_casewise_prediction, PIprobs)
 
-    PIresults <- list(averageCasePI = averagecase_prediction_intervals,
-                      caseWisePI = casewise_prediction_intervals)
+    # generate point predictions
+    point_predictions <- predict(model, testData, technique = technique)$predicted_items
+
+    PIresults <- list(average_case_PI = averagecase_prediction_intervals,
+                      case_wise_PI = casewise_prediction_intervals,
+                      point_predictions = point_predictions,
+                      actuals = testData)
     class(PIresults) <- "bootstrap_prediction"
     parallel::stopCluster(cl)
     return(PIresults)

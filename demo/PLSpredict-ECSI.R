@@ -38,13 +38,17 @@ pred_mobi_pls <- predict_pls(mobi_pls,
                              technique = predict_DA,
                              noFolds = 10)
 
+# Summarize the predict_pls results and print
 pred_sum <- summary(pred_mobi_pls)
 print(pred_sum)
-pred_sum <- summary(pred_mobi_pls, construct = "Loyalty")
-print(pred_sum)
 
+# Plot the predict_pls results accuracy and validity plots
 plot(pred_sum)
 plot(pred_sum, constructs = "Loyalty")
+
+# Summarize the results and print for one construct
+pred_sum <- summary(pred_mobi_pls, construct = "Loyalty")
+print(pred_sum)
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,
@@ -65,26 +69,8 @@ PIntervals <- bootstrap_prediction(model = mobi_pls_train,
                                  technique = predict_DA,
                                  PIprobs = 0.95,
                                  noBoots = 500)
+summary(PIntervals)
+plot(summary(PIntervals))
 
-# Visualization of Prediction Intervals
-##Create Holders & assign PI data
-aveCUSL1 <- PIntervals$averageCasePI[["CUSL1"]]
-casewiseCUSL1 <- PIntervals$caseWisePI[["CUSL1"]]
-
-##Allocate and sort data - first by actual data and then by predicted data
-dataholderCUSL1 <- cbind(t(aveCUSL1),mobi_pls_predict$predicted_Measurements[,"CUSL1"], mobi_pls_predict$testData[,"CUSL1"],t(casewiseCUSL1) )
-CUSL1sorted <- dataholderCUSL1[order(dataholderCUSL1[,4], dataholderCUSL1[,3]) , ]
-
-##Plot results function
-###Item CUSL1 residuals
-plot(mobi_pls_predict$testData[,"CUSL1"], mobi_pls_predict$residuals[,"CUSL1"],ylim = c(-10,10), ylab = "Residuals", xlab = "Actuals", main = "PLS Residuals for item CUSL1",pch = 16, col = rgb(0,0,0,0.2) )
-abline(h = 0)
-abline(h = predictionMetrics$PLSRMSE[,1], lty = 2)
-abline(h = -predictionMetrics$PLSRMSE[,1], lty = 2)
-
-### Item Y11 PLS Prediction Intervals
-plot(NULL, xlim = c(1,nrow(CUSL1sorted)), ylim = c(0,12), ylab = "Ranges", xlab = "Cases", type = "n", main = "PLS Prediction Intervals for item CUSL1")
-segments(c(1:50),CUSL1sorted[,5],c(1:50),CUSL1sorted[,6], col = 'lightgrey', lwd = 3)
-segments(c(1:50),CUSL1sorted[,1],c(1:50),CUSL1sorted[,2], col = 'darkgrey', lwd = 3)
-points(x = c(1:50), y = CUSL1sorted[,4],pch = 21, cex = 0.8, lwd = 2)
-points(x = c(1:50), y = CUSL1sorted[,3],pch = 20, cex = 0.8)
+summary(PIntervals, items = "CUSL1")
+plot(summary(PIntervals, items = "CUSL1"))
