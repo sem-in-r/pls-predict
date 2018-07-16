@@ -49,10 +49,10 @@ utils::capture.output(mobi_pls_predict_EA <- predict(object = mobi_pls_train,
                                              testData = testData,
                                              technique = predict_EA))
 
-construct_predictions_DA <- mobi_pls_predict_DA$predicted_composite_scores
-item_predictions_DA <- mobi_pls_predict_DA$predicted_items
-construct_predictions_EA <- mobi_pls_predict_EA$predicted_composite_scores
-item_predictions_EA <- mobi_pls_predict_EA$predicted_items
+construct_predictions_DA <- mobi_pls_predict_DA$predicted_CompositeScores
+item_predictions_DA <- mobi_pls_predict_DA$predicted_Measurements
+construct_predictions_EA <- mobi_pls_predict_EA$predicted_CompositeScores
+item_predictions_EA <- mobi_pls_predict_EA$predicted_Measurements
 
 
 ## Output originally created using following lines
@@ -85,62 +85,3 @@ test_that("PLSpredict generates item predictions EA correctly", {
   expect_equal(item_predictions_EA, item_predictions_EA_control)
 })
 
-context("Summary correctly reports predictions and metrics for DA and EA\n")
-pred_sum_DA <- summary(mobi_pls_predict_DA)
-pred_sum_EA <- summary(mobi_pls_predict_EA)
-
-summary_construct_predictions_DA <- pred_sum_DA$predicted_composite_scores
-summary_item_predictions_DA <- pred_sum_DA$predicted_items
-summary_construct_predictions_EA <- pred_sum_EA$predicted_composite_scores
-summary_item_predictions_EA <- pred_sum_EA$predicted_items
-summary_item_metrics_DA <- pred_sum_DA$item_predictive_metrics
-summary_item_metrics_EA <- pred_sum_EA$item_predictive_metrics
-summary_construct_metrics_DA <- pred_sum_DA$composite_predictive_metrics
-summary_construct_metrics_EA <- pred_sum_EA$composite_predictive_metrics
-
-# Score controls must be identical to earlier item and construct predictions
-# Created metrics controls here
-# write.csv(summary_item_metrics_DA, file = "tests/fixtures/summary_item_metrics_DA.csv")
-# write.csv(summary_item_metrics_EA, file = "tests/fixtures/summary_item_metrics_EA.csv")
-# write.csv(summary_construct_metrics_DA, file = "tests/fixtures/summary_construct_metrics_DA.csv")
-# write.csv(summary_construct_metrics_EA, file = "tests/fixtures/summary_construct_metrics_EA.csv")
-
-# Load controls
-summary_item_metrics_DA_control <- as.matrix(read.csv("../fixtures/summary_item_metrics_DA.csv", row.names = 1))
-summary_item_metrics_EA_control <- as.matrix(read.csv("../fixtures/summary_item_metrics_EA.csv", row.names = 1))
-summary_construct_metrics_DA_control <- as.matrix(read.csv("../fixtures/summary_construct_metrics_DA.csv", row.names = 1))
-summary_construct_metrics_EA_control <- as.matrix(read.csv("../fixtures/summary_construct_metrics_EA.csv", row.names = 1))
-
-# Testing
-
-test_that("Summary reports construct predictions DA correctly", {
-  expect_equal(summary_construct_predictions_DA, construct_predictions_DA_control)
-})
-
-test_that("Summary reports item predictions DA correctly", {
-  expect_equal(summary_item_predictions_DA, item_predictions_DA_control)
-})
-
-test_that("Summary reports construct predictions EA correctly", {
-  expect_equal(summary_construct_predictions_EA, construct_predictions_EA_control)
-})
-
-test_that("Summary reports item predictions EA correctly", {
-  expect_equal(summary_item_predictions_EA, item_predictions_EA_control)
-})
-
-test_that("Summary reports item predictive metrics DA correctly", {
-  expect_equal(summary_item_metrics_DA, summary_item_metrics_DA_control)
-})
-
-test_that("Summary reports item predictive metrics EA correctly", {
-  expect_equal(summary_item_metrics_EA, summary_item_metrics_EA_control)
-})
-
-test_that("Summary reports item predictive metrics DA correctly", {
-  expect_equal(summary_construct_metrics_DA, summary_construct_metrics_DA_control)
-})
-
-test_that("Summary reports item predictive metrics EA correctly", {
-  expect_equal(summary_construct_metrics_EA, summary_construct_metrics_EA_control)
-})
