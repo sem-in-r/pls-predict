@@ -34,21 +34,22 @@ mobi_pls <- estimate_pls(data = mobi,
 
 
 # Generating predictions for the full model - k-fold
+# If NULL is specified for noFolds, then LOOCV is used, where number of folds = number of observations
 pred_mobi_pls <- predict_pls(mobi_pls,
                              technique = predict_DA,
                              noFolds = 10)
 
 # Summarize the predict_pls results and print
 pred_sum <- summary(pred_mobi_pls)
-print(pred_sum)
+pred_sum
 
 # Plot the predict_pls results accuracy and validity plots
 plot(pred_sum)
 plot(pred_sum, constructs = "Loyalty")
 
 # Summarize the results and print for one construct
-pred_sum <- summary(pred_mobi_pls, construct = "Loyalty")
-print(pred_sum)
+pred_sum_loyalty <- summary(pred_mobi_pls, construct = "Loyalty")
+pred_sum_loyalty
 
 # Train the predictive model
 mobi_pls_train <- estimate_pls(data = trainData,

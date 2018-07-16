@@ -1,16 +1,14 @@
 #' @export
-predict_pls <- function(model, technique = predict_DA, noFolds = 10) {
+predict_pls <- function(model, technique = predict_DA, noFolds = NULL, cores = NULL) {
 
   stopifnot(inherits(model, "seminr_model"))
+
   # shuffle data
   order <- sample(nrow(model$data),nrow(model$data), replace = FALSE)
   ordered_data <- model$data[order,]
 
-  #Create noFolds equally sized folds
-  folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
-
   # collect in-sample and out-sample prediction matrices and sort everything to original row indexes
-  pred_matrices <- prediction_matrices(folds, noFolds, ordered_data, model,technique)
+  pred_matrices <- prediction_matrices( noFolds, ordered_data, model,technique, cores)
   PLS_predicted_outsample_construct <- pred_matrices$out_of_sample_construct[as.character(c(1:nrow(model$data))),]
   PLS_predicted_insample_construct <- pred_matrices$in_sample_construct[as.character(c(1:nrow(model$data))),]
   PLS_predicted_outsample_item <- pred_matrices$out_of_sample_item[as.character(c(1:nrow(model$data))),]

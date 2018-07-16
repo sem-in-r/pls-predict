@@ -132,73 +132,119 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 }
 
 # Function to collect and parse prediction matrices
-prediction_matrices <- function(folds, noFolds, ordered_data, model,technique) {
-  # create prediction matrices
-  matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
-  # collect the odd and even numbered matrices from the matrices return object
-  in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==1]])
-  out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==2]])
-  in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==3]])
-  out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==4]])
-  in_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==5]])
-  out_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==6]])
-  PLS_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==7]])
-  LM_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==0]])
+prediction_matrices <- function(noFolds, ordered_data, model,technique, cores) {
+  out <- tryCatch(
+    {
+    # If noFolds is NULL, perform parallel LOOCV
+    if (is.null(noFolds)) {
+      # Automatically perform LOOCV if number of folds not specified
+      noFolds = nrow(model$data)
+      #Create noFolds equally sized folds
+      folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
 
-  # mean the in-sample construct predictions by row
-  average_insample_construct <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_construct_matrix,
-                                                                   noFolds = noFolds,
-                                                                   constructs = model$constructs)
+      # Create cluster
+      suppressWarnings(ifelse(is.null(cores), cl <- parallel::makeCluster(parallel::detectCores()), cl <- parallel::makeCluster(cores)))
 
-  # mean the in-sample item predictions by row
-  average_insample_item <- sapply(1:length(model$mmVariables), mean_rows, matrix = in_sample_item_matrix,
-                                       noFolds = noFolds,
-                                       constructs = model$mmVariables)
+      #generate_lm_predictions <- PLSpredict:::generate_lm_predictions
+      #predict_lm_matrices <- PLSpredict:::predict_lm_matrices
+      # Export variables and functions to cluster
+      parallel::clusterExport(cl=cl, varlist=c("generate_lm_predictions",
+                                               "predict_lm_matrices"), envir=environment())
 
-  # sum the out-sample construct predictions by row
-  average_outsample_construct <- sapply(1:length(model$constructs), sum_rows, matrix = out_sample_construct_matrix,
-                                                                    noFolds = noFolds,
-                                                                    constructs = model$constructs)
+      # Execute the bootstrap
+      utils::capture.output(matrices <- parallel::parSapply(cl,1:noFolds,in_and_out_sample_predictions,folds = folds,
+                                                            ordered_data = ordered_data,
+                                                            model = model,
+                                                            technique = technique))
+      # Stop cluster
+      parallel::stopCluster(cl)
+    } else {
+      #Create noFolds equally sized folds
+      folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
+      matrices <- sapply(1:noFolds, in_and_out_sample_predictions, folds = folds,ordered_data = ordered_data, model = model, technique = technique)
+    }
 
-  # sum the out-sample item predictions by row
-  average_outsample_item <- sapply(1:length(model$mmVariables), sum_rows, matrix = out_sample_item_matrix,
-                                        noFolds = noFolds,
-                                        constructs = model$mmVariables)
+    # collect the odd and even numbered matrices from the matrices return object
+    in_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==1]])
+    out_sample_construct_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==2]])
+    in_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==3]])
+    out_sample_item_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==4]])
+    in_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==5]])
+    out_sample_lm_matrix <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==6]])
+    PLS_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==7]])
+    LM_in_sample_item_residuals <- do.call(cbind, matrices[(1:(noFolds*8))[1:(noFolds*8)%%8==0]])
 
-  # square the out-sample pls residuals, mean them and take the square root
-  average_insample_pls_item_residuals <- sqrt(sapply(1:length(model$mmVariables), mean_rows, matrix = PLS_in_sample_item_residuals^2,
-                                                 noFolds = noFolds,
-                                                 constructs = model$mmVariables))
-  # Collect endogenous items
-  endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
+    # mean the in-sample construct predictions by row
+    average_insample_construct <- sapply(1:length(model$constructs), mean_rows, matrix = in_sample_construct_matrix,
+                                                                     noFolds = noFolds,
+                                                                     constructs = model$constructs)
 
-  # mean the in-sample lm predictions by row
-  average_insample_lm <- sapply(1:length(endogenous_items), mean_rows, matrix = in_sample_lm_matrix,
-                                noFolds = noFolds,
-                                constructs = endogenous_items)
+    # mean the in-sample item predictions by row
+    average_insample_item <- sapply(1:length(model$mmVariables), mean_rows, matrix = in_sample_item_matrix,
+                                         noFolds = noFolds,
+                                         constructs = model$mmVariables)
 
-  # sum the out-sample item predictions by row
-  average_outsample_lm <- sapply(1:length(endogenous_items), sum_rows, matrix = out_sample_lm_matrix,
-                                   noFolds = noFolds,
-                                   constructs = endogenous_items)
+    # sum the out-sample construct predictions by row
+    average_outsample_construct <- sapply(1:length(model$constructs), sum_rows, matrix = out_sample_construct_matrix,
+                                                                      noFolds = noFolds,
+                                                                      constructs = model$constructs)
 
-  # square the out-sample lm residuals, mean them, and take square root
-  average_insample_lm_item_residuals <- sqrt(sapply(1:length(endogenous_items), mean_rows, matrix = LM_in_sample_item_residuals^2,
-                                                     noFolds = noFolds,
-                                                     constructs = endogenous_items))
+    # sum the out-sample item predictions by row
+    average_outsample_item <- sapply(1:length(model$mmVariables), sum_rows, matrix = out_sample_item_matrix,
+                                          noFolds = noFolds,
+                                          constructs = model$mmVariables)
 
-  colnames(average_insample_construct) <- colnames(average_outsample_construct) <- model$constructs
-  colnames(average_insample_item) <- colnames(average_insample_pls_item_residuals) <- colnames(average_outsample_item) <- model$mmVariables
-  colnames(average_insample_lm) <- colnames(average_outsample_lm) <- colnames(average_insample_lm_item_residuals) <- endogenous_items
+    # square the out-sample pls residuals, mean them and take the square root
+    average_insample_pls_item_residuals <- sqrt(sapply(1:length(model$mmVariables), mean_rows, matrix = PLS_in_sample_item_residuals^2,
+                                                   noFolds = noFolds,
+                                                   constructs = model$mmVariables))
+    # Collect endogenous items
+    endogenous_items <- unlist(sapply(unique(model$smMatrix[,2]), function(x) model$mmMatrix[model$mmMatrix[, "construct"] == x,"measurement"]), use.names = FALSE)
 
-  return(list(out_of_sample_construct = average_outsample_construct,
-              in_sample_construct = average_insample_construct,
-              out_of_sample_item = average_outsample_item,
-              in_sample_item = average_insample_item,
-              out_of_sample_lm_item = average_outsample_lm,
-              in_sample_lm_item = average_insample_lm,
-              pls_in_sample_item_residuals = average_insample_pls_item_residuals,
-              lm_in_sample_item_residuals = average_insample_lm_item_residuals))
+    # mean the in-sample lm predictions by row
+    average_insample_lm <- sapply(1:length(endogenous_items), mean_rows, matrix = in_sample_lm_matrix,
+                                  noFolds = noFolds,
+                                  constructs = endogenous_items)
+
+    # sum the out-sample item predictions by row
+    average_outsample_lm <- sapply(1:length(endogenous_items), sum_rows, matrix = out_sample_lm_matrix,
+                                     noFolds = noFolds,
+                                     constructs = endogenous_items)
+
+    # square the out-sample lm residuals, mean them, and take square root
+    average_insample_lm_item_residuals <- sqrt(sapply(1:length(endogenous_items), mean_rows, matrix = LM_in_sample_item_residuals^2,
+                                                       noFolds = noFolds,
+                                                       constructs = endogenous_items))
+
+    colnames(average_insample_construct) <- colnames(average_outsample_construct) <- model$constructs
+    colnames(average_insample_item) <- colnames(average_insample_pls_item_residuals) <- colnames(average_outsample_item) <- model$mmVariables
+    colnames(average_insample_lm) <- colnames(average_outsample_lm) <- colnames(average_insample_lm_item_residuals) <- endogenous_items
+
+    return(list(out_of_sample_construct = average_outsample_construct,
+                in_sample_construct = average_insample_construct,
+                out_of_sample_item = average_outsample_item,
+                in_sample_item = average_insample_item,
+                out_of_sample_lm_item = average_outsample_lm,
+                in_sample_lm_item = average_insample_lm,
+                pls_in_sample_item_residuals = average_insample_pls_item_residuals,
+                lm_in_sample_item_residuals = average_insample_lm_item_residuals))
+    },
+    error=function(cond) {
+      message("Parallel encountered this ERROR: ")
+      message(cond)
+      parallel::stopCluster(cl)
+      return(NULL)
+    },
+    warning=function(cond) {
+      message("Parallel encountered this WARNING:")
+      message(cond)
+      parallel::stopCluster(cl)
+      return(NULL)
+    },
+    finally={
+      #
+    }
+  )
 }
 
 # Function to return the RMSE and MAE of a score
@@ -236,7 +282,14 @@ generate_lm_predictions <- function(x, model, ordered_data, testIndexes, endogen
   indepTrainData <- independant_matrix[-testIndexes, ]
 
   # Create dependant matrices - training and testing
-  depTestData <- as.matrix(dependant_matrix[testIndexes, ])
+  #####
+  if (length(testIndexes) == 1) {
+    depTestData <- t(as.matrix(dependant_matrix[testIndexes, ]))
+  } else {
+    depTestData <- as.matrix(dependant_matrix[testIndexes, ])
+  }
+  #####
+  #depTestData <- as.matrix(dependant_matrix[testIndexes, ])
   depTrainData <- as.matrix(dependant_matrix[-testIndexes, ])
   colnames(depTrainData) <- colnames(depTestData) <- dependant_items
 
