@@ -1,43 +1,16 @@
-
 #' @export
-kfold_predict <- function(model, technique = predict_DA, noFolds = 10) {
-
-  stopifnot(inherits(model, "seminr_model"))
-  # shuffle data
-  order <- sample(nrow(model$data),nrow(model$data), replace = FALSE)
-  ordered_data <- model$data[order,]
-
-  #Create noFolds equally sized folds
-  folds <- cut(seq(1,nrow(ordered_data)),breaks=noFolds,labels=FALSE)
-
-  # collect in-sample and out-sample prediction matrices
-  pred_matrices <- prediction_matrices(folds, noFolds, ordered_data, model,technique)
-  PLS_predicted_outsample <- pred_matrices$out_of_sample
-  PLS_predicted_insample <- pred_matrices$in_sample
-
-  # assign the correct (randomized) rownumbers
-  rownames(PLS_predicted_outsample) <- rownames(PLS_predicted_insample) <- order
-
-  results <- list(composite_out_of_sample = PLS_predicted_outsample,
-                  composite_in_sample = PLS_predicted_insample,
-                  actuals_star = model$construct_scores[order,])
-  class(results) <- "kfold_predictions"
-  return(results)
-}
-
-#' @export
-predictive_accuracy <- function(kfold_predictions, construct) {
-  stopifnot(inherits(kfold_predictions, "kfold_predictions"))
+composite_accuracy <- function(construct, pls_prediction_kfold) {
+  stopifnot(inherits(pls_prediction_kfold, "pls_prediction_kfold"))
 
   # Evaluate metrics
-  oos_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_out_of_sample[,construct])^2))
-  oos_MAE <- mean(abs(kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_out_of_sample[,construct]))
+  oos_RMSE <- sqrt(mean((pls_prediction_kfold$composites$actuals_star[,construct] - pls_prediction_kfold$composites$composite_out_of_sample[,construct])^2))
+  oos_MAE <- mean(abs(pls_prediction_kfold$composites$actuals_star[,construct] - pls_prediction_kfold$composites$composite_out_of_sample[,construct]))
 
-  is_RMSE <- sqrt(mean((kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct])^2))
-  is_MAE <- mean(abs(kfold_predictions$actuals_star[,construct] - kfold_predictions$composite_in_sample[,construct]))
+  is_RMSE <- sqrt(mean((pls_prediction_kfold$composites$actuals_star[,construct] - pls_prediction_kfold$composites$composite_in_sample[,construct])^2))
+  is_MAE <- mean(abs(pls_prediction_kfold$composites$actuals_star[,construct] - pls_prediction_kfold$composites$composite_in_sample[,construct]))
 
   ##Allocate and sort data - first by actual data and then by predicted data
-  holder <- as.data.frame(cbind(kfold_predictions$composite_in_sample[,construct],kfold_predictions$composite_out_of_sample[,construct], kfold_predictions$actuals_star[,construct]))
+  holder <- as.data.frame(cbind(pls_prediction_kfold$composites$composite_in_sample[,construct],pls_prediction_kfold$composites$composite_out_of_sample[,construct], pls_prediction_kfold$composites$actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
   holder_sorted <- holder[order(holder[,"actual"], holder[,"OOS"]) , ]
 
@@ -50,7 +23,7 @@ predictive_accuracy <- function(kfold_predictions, construct) {
   holder_sorted$outliers <- 1
   holder_sorted[outliers,"outliers"] <- 2
 
-  return_list <- list(evaluation_matrix = holder_sorted,
+  return_list <- list(accuracy_matrix = holder_sorted,
                       IS_RMSE = is_RMSE,
                       OOS_RMSE = oos_RMSE,
                       IS_MAE = is_MAE,
@@ -61,14 +34,14 @@ predictive_accuracy <- function(kfold_predictions, construct) {
 }
 
 #' @export
-predictive_validity <- function(kfold_predictions, construct) {
+composite_validity <- function(construct, pls_prediction_kfold) {
 
   # Run calibration regression
-  cal_lm <- stats::lm(kfold_predictions$composite_in_sample[,construct] ~ kfold_predictions$composite_out_of_sample[,construct])
+  cal_lm <- stats::lm(pls_prediction_kfold$composites$composite_in_sample[,construct] ~ pls_prediction_kfold$composites$composite_out_of_sample[,construct])
   cal_sum <- summary(cal_lm)
 
   # create
-  holder <- as.data.frame(cbind(kfold_predictions$composite_in_sample[,construct],kfold_predictions$composite_out_of_sample[,construct], kfold_predictions$actuals_star[,construct]))
+  holder <- as.data.frame(cbind(pls_prediction_kfold$composites$composite_in_sample[,construct],pls_prediction_kfold$composites$composite_out_of_sample[,construct], pls_prediction_kfold$composites$actuals_star[,construct]))
   colnames(holder) <- c("IS","OOS","actual")
   holder$Cook <- stats::cooks.distance(cal_lm)
   holder$Cook_degree <- 0
@@ -81,20 +54,46 @@ predictive_validity <- function(kfold_predictions, construct) {
   cal_sum$coefficients[2,3] <- (cal_sum$coefficients[2,1]-1)/cal_sum$coefficients[2,2]
   cal_sum$coefficients[2,4] <- stats::pt(cal_sum$coefficients[2,3],df = nrow(holder)-1, lower.tail = TRUE)
 
-  return(list(evaluation_matrix = holder,
+  return(list(validity_matrix = holder,
               linear_model = cal_sum,
               influential_cases = holder[(holder$Cook_degree == 2)|(holder$Cook_degree == 3),c(1,2,4)]))
 }
 
-# Function to evaluate kfold_predictions
+# Function to evaluate pls_prediction_kfold
 #' @export
-evaluate_composite <- function(kfold_predictions, construct) {
-  composite_accuracy <- predictive_accuracy(kfold_predictions, construct)
-  composite_validity <- predictive_validity(kfold_predictions, construct)
-
+evaluate_composite <- function(pls_prediction_kfold) {
+  composite_accuracy <- sapply(colnames(pls_prediction_kfold$composites$composite_out_of_sample), composite_accuracy, pls_prediction_kfold = pls_prediction_kfold)
+  composite_validity <- sapply(colnames(pls_prediction_kfold$composites$composite_out_of_sample), composite_validity, pls_prediction_kfold = pls_prediction_kfold)
   return_list <- list(composite_accuracy = composite_accuracy,
-                      composite_validity = composite_validity,
-                      construct = construct)
+                      composite_validity = composite_validity)
   class(return_list) <- "composite_evaluation"
   return(return_list)
+}
+
+#' @export
+# Function to calculate item metrics
+item_metrics <- function(pls_prediction_kfold) {
+
+  # Genereate IS PLS metrics
+  PLS_item_predictive_metrics_IS <- apply(pls_prediction_kfold$items$pls_in_sample_residuals, 2, prediction_metrics)
+
+  # Generate OOS PLS metrics
+  PLS_item_residuals_OOS <- as.matrix(pls_prediction_kfold$items$item_actuals[,colnames(pls_prediction_kfold$items$item_out_of_sample)] - pls_prediction_kfold$items$item_out_of_sample)
+  PLS_item_predictive_metrics_OOS <- apply(PLS_item_residuals_OOS, 2, prediction_metrics)
+
+  # Generate IS LM metrics
+  LM_item_predictive_metrics_IS <- apply(pls_prediction_kfold$items$lm_in_sample_residuals, 2, prediction_metrics)
+
+  # Generate OOS LM metrics
+  LM_item_residuals_OOS <- as.matrix(pls_prediction_kfold$items$item_actuals[,colnames(pls_prediction_kfold$items$lm_out_of_sample)] - pls_prediction_kfold$items$lm_out_of_sample)
+  LM_item_predictive_metrics_OOS <- apply(LM_item_residuals_OOS, 2, prediction_metrics)
+
+  # Assign rownames to matrices
+  rownames(PLS_item_predictive_metrics_IS) <- rownames(PLS_item_predictive_metrics_OOS) <- rownames(LM_item_predictive_metrics_OOS) <- c("RMSE","MAD")
+  rownames(LM_item_predictive_metrics_OOS) <- rownames(LM_item_predictive_metrics_IS) <- c("RMSE","MAD")
+
+  return(list(PLS_item_predictive_metrics_IS = PLS_item_predictive_metrics_IS,
+              PLS_item_predictive_metrics_OOS = PLS_item_predictive_metrics_OOS,
+              LM_item_predictive_metrics_IS = LM_item_predictive_metrics_IS,
+              LM_item_predictive_metrics_OOS = LM_item_predictive_metrics_OOS))
 }
