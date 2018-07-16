@@ -22,7 +22,7 @@ mobi_sm <- relationships(
 trainData <- mobi[1:200,]
 testData <- mobi[201:250,]
 mobi_train <- seminr::estimate_pls(trainData, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting)
-prediction_intervals_DA <- bootstrap_prediction(model = mobi_train,
+prediction_intervals_DA <- predictionInterval(model = mobi_train,
                                               testData = testData,
                                               technique = predict_DA,
                                               PIprobs = 0.95,
@@ -37,30 +37,30 @@ prediction_intervals_DA_control <- as.matrix(read.csv("../fixtures/prediction_in
 
 # Testing
 
-test_that("bootstrap_prediction calculates the average case lower bound PI correctly DA", {
-  diff <- sum(abs(prediction_intervals_DA$average_case_PI$CUSA1[,1] - prediction_intervals_DA_control[1,501:550]))/sum(prediction_intervals_DA$average_case_PI$CUSA1[,1])
+test_that("predictionInterval calculates the average case lower bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_DA$averageCasePI$CUSA1[1,] - prediction_intervals_DA_control[1,501:550]))/sum(prediction_intervals_DA$averageCasePI$CUSA1[1,])
   expect_lt(diff, 0.05)
 })
 
-test_that("bootstrap_prediction calculates the average case upper bound PI correctly DA", {
-  diff <- sum(abs(prediction_intervals_DA$average_case_PI$CUSA1[,2] - prediction_intervals_DA_control[2,501:550]))/sum(prediction_intervals_DA$average_case_PI$CUSA1[,2])
+test_that("predictionInterval calculates the average case upper bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_DA$averageCasePI$CUSA1[2,] - prediction_intervals_DA_control[2,501:550]))/sum(prediction_intervals_DA$averageCasePI$CUSA1[2,])
   expect_lt(diff, 0.05)
 })
 
-test_that("bootstrap_prediction calculates the casewise lower bound PI correctly DA", {
-  diff <- sum(abs(prediction_intervals_DA$case_wise_PI$CUSA1[,1] - prediction_intervals_DA_control[1,1151:1200]))/sum(prediction_intervals_DA$case_wise_PI$CUSA1[,1])
+test_that("predictionInterval calculates the casewise lower bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_DA$caseWisePI$CUSA1[1,] - prediction_intervals_DA_control[1,1151:1200]))/sum(prediction_intervals_DA$caseWisePI$CUSA1[1,])
   expect_lt(diff, 0.08)
 })
 
-test_that("bootstrap_prediction calculates the casewise upper bound PI correctly DA", {
-  diff <- sum(abs(prediction_intervals_DA$case_wise_PI$CUSA1[,2] - prediction_intervals_DA_control[2,1151:1200]))/sum(prediction_intervals_DA$case_wise_PI$CUSA1[,2])
+test_that("predictionInterval calculates the casewise upper bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_DA$caseWisePI$CUSA1[2,] - prediction_intervals_DA_control[2,1151:1200]))/sum(prediction_intervals_DA$caseWisePI$CUSA1[2,])
   expect_lt(diff, 0.08)
 })
 
 context("PLSpredict correctly calculates the prediction intervals for EA technique\n")
 
 
-prediction_intervals_EA <- bootstrap_prediction(model = mobi_train,
+prediction_intervals_EA <- predictionInterval(model = mobi_train,
                                               testData = testData,
                                               technique = predict_EA,
                                               PIprobs = 0.95,
@@ -75,23 +75,23 @@ prediction_intervals_EA_control <- as.matrix(read.csv("../fixtures/prediction_in
 
 # Testing
 
-test_that("bootstrap_prediction calculates the average case lower bound PI correctly", {
-  diff <- sum(abs(prediction_intervals_EA$average_case_PI$CUSA1[,1] - prediction_intervals_EA_control[1,501:550]))/sum(prediction_intervals_EA$average_case_PI$CUSA1[,1])
+test_that("predictionInterval calculates the average case lower bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_EA$averageCasePI$CUSA1[1,] - prediction_intervals_EA_control[1,501:550]))/sum(prediction_intervals_EA$averageCasePI$CUSA1[1,])
   expect_lt(diff, 0.05)
 })
 
-test_that("bootstrap_prediction calculates the average case upper bound PI correctly", {
-  diff <- sum(abs(prediction_intervals_EA$average_case_PI$CUSA1[,2] - prediction_intervals_EA_control[2,501:550]))/sum(prediction_intervals_EA$average_case_PI$CUSA1[,2])
+test_that("predictionInterval calculates the average case upper bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_EA$averageCasePI$CUSA1[2,] - prediction_intervals_EA_control[2,501:550]))/sum(prediction_intervals_EA$averageCasePI$CUSA1[2,])
   expect_lt(diff, 0.05)
 })
 
-test_that("bootstrap_prediction calculates the casewise lower bound PI correctly", {
-  diff <- sum(abs(prediction_intervals_EA$case_wise_PI$CUSA1[,1] - prediction_intervals_EA_control[1,1151:1200]))/sum(prediction_intervals_EA$case_wise_PI$CUSA1[,1])
+test_that("predictionInterval calculates the casewise lower bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_EA$caseWisePI$CUSA1[1,] - prediction_intervals_EA_control[1,1151:1200]))/sum(prediction_intervals_EA$caseWisePI$CUSA1[1,])
   expect_lt(diff, 0.08)
 })
 
-test_that("bootstrap_prediction calculates the casewise upper bound PI correctly", {
-  diff <- sum(abs(prediction_intervals_EA$case_wise_PI$CUSA1[,2] - prediction_intervals_EA_control[2,1151:1200]))/sum(prediction_intervals_EA$case_wise_PI$CUSA1[,2])
+test_that("predictionInterval calculates the casewise upper bound PI correctly", {
+  diff <- sum(abs(prediction_intervals_EA$caseWisePI$CUSA1[2,] - prediction_intervals_EA_control[2,1151:1200]))/sum(prediction_intervals_EA$caseWisePI$CUSA1[2,])
   expect_lt(diff, 0.08)
 })
 
