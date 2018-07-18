@@ -107,7 +107,7 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 
   #LM Matrices
   lm_holder <- sapply(unique(model$smMatrix[,2]), generate_lm_predictions, model = model,
-                          ordered_data = ordered_data,
+                          ordered_data = ordered_data[,model$mmVariables],
                           testIndexes = testIndexes,
                           endogenous_items = endogenous_items,
                           trainIndexes = trainIndexes)

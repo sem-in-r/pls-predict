@@ -37,7 +37,7 @@ mobi_pls <- estimate_pls(data = mobi,
 # If NULL is specified for noFolds, then LOOCV is used, where number of folds = number of observations
 pred_mobi_pls <- predict_pls(mobi_pls,
                              technique = predict_DA,
-                             noFolds = 10)
+                             noFolds = NULL )
 
 # Summarize the predict_pls results and print
 pred_sum <- summary(pred_mobi_pls)

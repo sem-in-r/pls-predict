@@ -1,15 +1,17 @@
 Package: PLSpredict
 Type: Package
 Title: Prediction for Partial Least Squares Models
-Version: 0.1.0
-Date: 2018-06-26
+Version: 0.2.0
+Date: 2018-07-15
 Authors@R: c(person("Soumya", "Ray",
               email = "soumya.ray@gmail.com", role = c("aut", "ths")),
              person("Nicholas", "Danks",
               email = "nicholasdanks@hotmail.com", role = c("aut","cre")),
              person("Juan Manuel Velasquez", "Estrada", role = "aut"))
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: This package provides multiple tools for performing predictions on SEMinR PLS models. Predictions can be 
+    generated for SEMinR models. Cross-validation predictions using either k-fold or LOOCV can be generated. Predictions Intervals
+    can be generated for test data. Predictive metrics are generated for both items and constructs. The composite accuracy and validity
+    can be evaluated demonstrating predictive power and overfit, highlighting cases not well predicted by the model.
 Depends: R (>= 3.1.0)
 Imports: 
     seminr,
