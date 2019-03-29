@@ -21,37 +21,37 @@ utils::capture.output(mobi_pls <- seminr::estimate_pls(data = mobi,
                                  measurement_model = mobi_mm,
                                  structural_model = mobi_sm))
 
-utils::capture.output(pred_mobi_pls_EA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_EA <- predict_pls(model = mobi_pls,
                                       technique = predict_EA,
                                       noFolds = 10))
 
-utils::capture.output(pred_acc_EA <- predictive_accuracy(results = pred_mobi_pls_EA, construct = "Value"))
-utils::capture.output(pred_val_EA <- predictive_validity(results = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_acc_EA <- composite_accuracy(pls_prediction_kfold = pred_mobi_pls_EA, construct = "Value"))
+utils::capture.output(pred_val_EA <- composite_validity(pls_prediction_kfold = pred_mobi_pls_EA, construct = "Value"))
 
-utils::capture.output(pred_mobi_pls_DA <- generate_predictions(model = mobi_pls,
+utils::capture.output(pred_mobi_pls_DA <- predict_pls(model = mobi_pls,
                                                                technique = predict_DA,
                                                                noFolds = 10))
 
-utils::capture.output(pred_acc_DA <- predictive_accuracy(results = pred_mobi_pls_DA, construct = "Value"))
-utils::capture.output(pred_val_DA <- predictive_validity(results = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_acc_DA <- composite_accuracy(pls_prediction_kfold = pred_mobi_pls_DA, construct = "Value"))
+utils::capture.output(pred_val_DA <- composite_validity(pls_prediction_kfold = pred_mobi_pls_DA, construct = "Value"))
 
-acc_matrix_EA <- pred_acc_EA$evaluation_matrix
+acc_matrix_EA <- pred_acc_EA$accuracy_matrix
 IS_RMSE_EA <- pred_acc_EA$IS_RMSE
 OOS_RMSE_EA <- pred_acc_EA$OOS_RMSE
 OOS_MAE_EA <- pred_acc_EA$OOS_MAE
 IS_MAE_EA <- pred_acc_EA$IS_MAE
-acc_infl_cases_EA <- pred_acc_EA$influential_cases
-acc_matrix_DA <- pred_acc_DA$evaluation_matrix
+acc_infl_cases_EA <- pred_acc_EA$outliers
+acc_matrix_DA <- pred_acc_DA$accuracy_matrix
 IS_RMSE_DA <- pred_acc_DA$IS_RMSE
 OOS_RMSE_DA <- pred_acc_DA$OOS_RMSE
 OOS_MAE_DA <- pred_acc_DA$OOS_MAE
 IS_MAE_DA <- pred_acc_DA$IS_MAE
-acc_infl_cases_DA <- pred_acc_DA$influential_cases
+acc_infl_cases_DA <- pred_acc_DA$outliers
 
-val_matrix_EA <- pred_val_EA$evaluation_matrix
+val_matrix_EA <- pred_val_EA$validity_matrix
 val_coeff_EA <- pred_val_EA$linear_model$coefficients
 val_infl_cases_EA <- pred_val_EA$influential_cases
-val_matrix_DA <- pred_val_DA$evaluation_matrix
+val_matrix_DA <- pred_val_DA$validity_matrix
 val_coeff_DA <- pred_val_DA$linear_model$coefficients
 val_infl_cases_DA <- pred_val_DA$influential_cases
 
@@ -86,50 +86,51 @@ val_infl_cases_DA_control <- as.matrix(read.csv("../fixtures/val_infl_cases_DA.c
 
 # Testing
 
-test_that("predictive_accuracy() generates accuracy matrix EA correctly", {
+test_that("composite_accuracy() generates accuracy matrix EA correctly", {
   expect_equal(as.matrix(acc_matrix_EA), acc_matrix_EA_control)
 })
 
-test_that("predictive_accuracy() generates accuracy matrix DA correctly", {
+test_that("composite_accuracy() generates accuracy matrix DA correctly", {
   expect_equal(as.matrix(acc_matrix_DA), acc_matrix_DA_control)
 })
 
-test_that("predictive_accuracy() calculates metrics EA correctly", {
+test_that("composite_accuracy() calculates metrics EA correctly", {
   expect_equal(c(IS_RMSE_EA,OOS_RMSE_EA,OOS_MAE_EA,IS_MAE_EA), as.vector(acc_metrics_EA_control))
 })
 
-test_that("predictive_accuracy() calculates metrics DA correctly", {
+test_that("composite_accuracy() calculates metrics DA correctly", {
   expect_equal(c(IS_RMSE_DA,OOS_RMSE_DA,OOS_MAE_DA,IS_MAE_DA), as.vector(acc_metrics_DA_control))
 })
 
-test_that("predictive_accuracy() reports influential cases EA correctly", {
+test_that("composite_accuracy() reports influential cases EA correctly", {
   expect_equal(acc_infl_cases_EA, as.character(as.vector(acc_infl_cases_EA_control)))
 })
 
-test_that("predictive_accuracy() reports influential cases DA correctly", {
+test_that("composite_accuracy() reports influential cases DA correctly", {
   expect_equal(acc_infl_cases_DA, as.character(as.vector(acc_infl_cases_DA_control)))
 })
 
-test_that("predictive_validity() generates validity matrix EA correctly", {
+test_that("composite_validity() generates validity matrix EA correctly", {
   expect_equal(val_matrix_EA, as.data.frame(val_matrix_EA_control))
 })
 
-test_that("predictive_validity() generates validity matrix DA correctly", {
+test_that("composite_validity() generates validity matrix DA correctly", {
   expect_equal(val_matrix_DA, as.data.frame(val_matrix_DA_control))
 })
 
-test_that("predictive_validity() generates t-tests EA correctly", {
+test_that("composite_validity() generates t-tests EA correctly", {
   expect_equal(as.vector(val_coeff_EA[1:2,]), as.vector(val_coeff_EA_control[1:2,]))
 })
 
-test_that("predictive_validity() generates t-tests DA correctly", {
+test_that("composite_validity() generates t-tests DA correctly", {
   expect_equal(as.vector(val_coeff_DA[1:2,]), as.vector(val_coeff_DA_control[1:2,]))
 })
 
-test_that("predictive_validity() reports influential cases EA correctly", {
+test_that("composite_validity() reports influential cases EA correctly", {
   expect_equal(val_infl_cases_EA, as.data.frame(val_infl_cases_EA_control))
 })
 
-test_that("predictive_validity() reports influential cases DA correctly", {
+test_that("composite_validity() reports influential cases DA correctly", {
   expect_equal(val_infl_cases_DA, as.data.frame(val_infl_cases_DA_control))
 })
+

@@ -62,7 +62,7 @@ We have defined the structural model as consisting of 2 exogenous antecedent fac
 
 In R our model is described by creating a 2 by 2 matrix and initializing this as matrix object smMatrix. The source column identifies the antecedent factor and the target column the outcome factor. This matrix is limited to 2 column width, but can have any number of antecedent and outcome factor combinations to accurately describe the proposed structural model. Indeed, one can even model interactions and moderations in this way.
 
-Please note that only alphanumeric characters to be used in column names / latent variable names / measurement item names. Ie. no `/` or `*` etc.
+Please note that only alphanumeric characters to be used in column names / construct variable names / measurement item names. Ie. no `/` or `*` etc.
 
 ```
 #Create the Matrix of the Structural Model
@@ -74,7 +74,7 @@ smMatrix <- matrix(c("PerceivedVisualComplexity", "ApproachAvoidance",
 #### Measurement Model
 We have defined the measurement model as follows:
 
-In R our model is described by creating a 13 by 3 matrix and initializing it as matrix object mmMatrix. This matrix is limited to 3 column width, but can have any number of measurement model combinations to accurately describe the proposed measurement model. The Latent column identifies the factor to which the variable from the dataset will be applied, the Measurement column identifies the variable applied to that factor and the Type column identifies whether the factor is (R)eflective (Endogenous) or (F)ormative (Exogenous). The Type of the variables must be consistent throughout for each factor (ie a factor cannot have some reflective and some formative variables), but any number of combinations of Formative and Reflective factors can be defined to fully and accurately describe the proposed model.
+In R our model is described by creating a 13 by 3 matrix and initializing it as matrix object mmMatrix. This matrix is limited to 3 column width, but can have any number of measurement model combinations to accurately describe the proposed measurement model. The construct column identifies the factor to which the variable from the dataset will be applied, the Measurement column identifies the variable applied to that factor and the Type column identifies whether the factor is (R)eflective (Endogenous) or (F)ormative (Exogenous). The Type of the variables must be consistent throughout for each factor (ie a factor cannot have some reflective and some formative variables), but any number of combinations of Formative and Reflective factors can be defined to fully and accurately describe the proposed model.
 
 ```
 #Create the Matrix of the Measurement Model
@@ -91,7 +91,7 @@ mmMatrix <- matrix(c("PerceivedVisualComplexity","VX.0","F",
                      "ApproachAvoidance","AA.1","R",
                      "ApproachAvoidance","AA.2","R",
                      "ApproachAvoidance","AA.3","R"),nrow=13,ncol=3,byrow =TRUE,
-                   dimnames = list(1:13,c("latent","measurement","type")))
+                   dimnames = list(1:13,c("construct","measurement","type")))
 ```
 
 With the data imported and both the structural and measurement models defined, the simplePLS function can be called:
@@ -103,7 +103,7 @@ This new plsModel object is now the model of the PLSPM that we have defined and 
 2. The original SD of each variable (for predictive purposes)  
 3. The structural model (in matrix form as described above)  
 4. The measurement model (in matrix form as described above)  
-5. The latent variables   
+5. The construct variables   
 6. The measurement variables  
 7. Outer loadings for reflective or endogenous factors  
 8. Outer weights for formative or exogenous factors  
