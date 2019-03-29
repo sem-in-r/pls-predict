@@ -107,7 +107,7 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
 
   #LM Matrices
   lm_holder <- sapply(unique(model$smMatrix[,2]), generate_lm_predictions, model = model,
-                          ordered_data = ordered_data,
+                          ordered_data = ordered_data[,model$mmVariables],
                           testIndexes = testIndexes,
                           endogenous_items = endogenous_items,
                           trainIndexes = trainIndexes)
@@ -150,6 +150,7 @@ prediction_matrices <- function(noFolds, ordered_data, model,technique, cores) {
       # Export variables and functions to cluster
       parallel::clusterExport(cl=cl, varlist=c("generate_lm_predictions",
                                                "predict_lm_matrices"), envir=environment())
+      #parallel::clusterEvalQ(cl=cl,expr = "library(PLSpredict)")
 
       # Execute the bootstrap
       utils::capture.output(matrices <- parallel::parSapply(cl,1:noFolds,in_and_out_sample_predictions,folds = folds,

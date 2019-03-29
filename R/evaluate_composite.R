@@ -1,4 +1,4 @@
-#' @export
+# Function to calculate accuracy of a composite
 composite_accuracy <- function(construct, pls_prediction_kfold) {
   stopifnot(inherits(pls_prediction_kfold, "pls_prediction_kfold"))
 
@@ -33,7 +33,7 @@ composite_accuracy <- function(construct, pls_prediction_kfold) {
   return(return_list)
 }
 
-#' @export
+# Function to calculate validity (overfit) of a composite
 composite_validity <- function(construct, pls_prediction_kfold) {
 
   # Run calibration regression
@@ -60,7 +60,6 @@ composite_validity <- function(construct, pls_prediction_kfold) {
 }
 
 # Function to evaluate pls_prediction_kfold
-#' @export
 evaluate_composite <- function(pls_prediction_kfold) {
   composite_accuracy <- sapply(colnames(pls_prediction_kfold$composites$composite_out_of_sample), composite_accuracy, pls_prediction_kfold = pls_prediction_kfold)
   composite_validity <- sapply(colnames(pls_prediction_kfold$composites$composite_out_of_sample), composite_validity, pls_prediction_kfold = pls_prediction_kfold)
@@ -70,7 +69,6 @@ evaluate_composite <- function(pls_prediction_kfold) {
   return(return_list)
 }
 
-#' @export
 # Function to calculate item metrics
 item_metrics <- function(pls_prediction_kfold) {
 
