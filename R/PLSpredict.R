@@ -8,8 +8,8 @@ predict.seminr_model <- function(object, testData, technique = predict_DA, na.pr
   fulldata <- object$data
   fulldata[rownames(testData),] <- testData
   utils::capture.output(fullmodel <- seminr::estimate_pls(data =fulldata,
-                                    measurement_model = object$mmMatrix,
-                                    interactions = object$interactions,
+                                    measurement_model = object$raw_measurement_model,
+                                    #interactions = object$interactions,
                                     structural_model = object$smMatrix,
                                     inner_weights = object$inner_weights))
   actual_star <- fullmodel$construct_scores
