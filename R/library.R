@@ -80,8 +80,8 @@ in_and_out_sample_predictions <- function(x, folds, ordered_data, model,techniqu
   PLS_predicted_insample_item_residuals <- matrix(0,nrow = nrow(ordered_data),ncol = length(model$mmVariables),dimnames = list(rownames(ordered_data),model$mmVariables))
   #PLS prediction on testset model
   utils::capture.output(train_model <- seminr::estimate_pls(data = trainingData,
-                                      measurement_model = model$mmMatrix,
-                                      interactions = model$mobi_xm,
+                                      measurement_model = model$raw_measurement_model,
+                                      #interactions = model$mobi_xm,
                                       structural_model = model$smMatrix,
                                       inner_weights = model$inner_weights))
   test_predictions <- stats::predict(object = train_model,

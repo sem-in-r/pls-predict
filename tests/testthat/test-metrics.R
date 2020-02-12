@@ -20,7 +20,7 @@ mobi_sm <- relationships(
 
 # Load data, assemble model, and estimate using PLSpredict
 mobi <- mobi
-utils::capture.output(seminr_model <- seminr::estimate_pls(mobi, mobi_mm, interactions = NULL, mobi_sm, inner_weights = path_weighting))
+utils::capture.output(seminr_model <- seminr::estimate_pls(mobi, mobi_mm, mobi_sm, inner_weights = path_weighting))
 utils::capture.output(pred_mobi_pls_DA <- predict_pls(seminr_model,
                                                       technique = predict_DA,
                                                       noFolds = 10))
